@@ -254,6 +254,7 @@ export function createDraft<T extends object>(createDraftOptions: {
     proxyHandler
   );
   finalities.revoke.push(revoke);
+  finalities.nodes.push(proxyDraft);
   proxyDraft.proxy = proxy;
   if (parentDraft) {
     const target = parentDraft;
@@ -302,7 +303,8 @@ export function finalizeDraft<T>(
   returnedValue: [T] | [],
   patches?: Patches,
   inversePatches?: Patches,
-  enableAutoFreeze?: boolean
+  enableAutoFreeze?: boolean,
+  continueMode?: boolean
 ) {
   const proxyDraft = getProxyDraft(result);
   const original = proxyDraft?.original ?? result;
@@ -320,7 +322,9 @@ export function finalizeDraft<T>(
         ? proxyDraft.copy
         : proxyDraft.original
       : result;
-  if (proxyDraft) revokeProxy(proxyDraft);
+  if (proxyDraft && !continueMode) {
+    revokeProxy(proxyDraft);
+  }
   if (enableAutoFreeze) {
     deepFreeze(state, state, proxyDraft?.options.updatedValues);
   }

@@ -1,0 +1,706 @@
+/* eslint-disable no-param-reassign */
+import {
+  create,
+  apply,
+  isContinuedDraft,
+  getContinuationCount,
+  getAccumulatedPatches,
+} from '../src';
+
+describe('resumable finalize', () => {
+  describe('return shape without enablePatches', () => {
+    test('finalize with continue true returns finalized state and draft remains usable', () => {
+      const baseState = { a: 1, b: { c: 2 } };
+      const [draft, finalize] = create(baseState);
+      draft.a = 10;
+      const state = finalize({ continue: true });
+      expect(state).toEqual({ a: 10, b: { c: 2 } });
+      expect(state).not.toBe(baseState);
+      expect(() => {
+        draft.b.c = 99;
+      }).not.toThrow();
+    });
+  });
+
+  describe('return shape with enablePatches', () => {
+    test('finalize with continue true returns state patches inversePatches tuple', () => {
+      const baseState = { x: 1, y: 2 };
+      const [draft, finalize] = create(baseState, { enablePatches: true });
+      draft.x = 99;
+      const [state, patches, inversePatches] = finalize({ continue: true });
+      expect(state).toEqual({ x: 99, y: 2 });
+      expect(patches).toEqual([{ op: 'replace', path: ['x'], value: 99 }]);
+      expect(inversePatches).toEqual([{ op: 'replace', path: ['x'], value: 1 }]);
+      expect(() => {
+        draft.y = 50;
+      }).not.toThrow();
+    });
+  });
+
+  describe('draft usability after continued finalize', () => {
+    test('property writes on draft work after continued finalize', () => {
+      const baseState = { a: 1, b: 2 };
+      const [draft, finalize] = create(baseState);
+      draft.a = 10;
+      finalize({ continue: true });
+      draft.b = 20;
+      const state = finalize();
+      expect(state).toEqual({ a: 10, b: 20 });
+    });
+
+    test('property reads on draft return correct values after continued finalize', () => {
+      const baseState = { a: 1, b: 2 };
+      const [draft, finalize] = create(baseState);
+      draft.a = 10;
+      finalize({ continue: true });
+      expect(draft.a).toBe(10);
+      expect(draft.b).toBe(2);
+      finalize();
+    });
+
+    test('property deletes on draft work after continued finalize', () => {
+      const baseState = { a: 1, b: 2 } as Record<string, number>;
+      const [draft, finalize] = create(baseState);
+      draft.a = 10;
+      finalize({ continue: true });
+      delete draft.a;
+      const state = finalize();
+      expect('a' in state).toBe(false);
+      expect(state.b).toBe(2);
+    });
+  });
+
+  describe('incremental patch generation', () => {
+    test('patches after continued finalize are relative to the new baseline not the original base state', () => {
+      const baseState = { a: 1, b: 2 };
+      const [draft, finalize] = create(baseState, { enablePatches: true });
+      draft.a = 10;
+      const [, patches1, inversePatches1] = finalize({ continue: true });
+      draft.b = 20;
+      const [, patches2, inversePatches2] = finalize({ continue: true });
+      expect(patches1).toEqual([{ op: 'replace', path: ['a'], value: 10 }]);
+      expect(inversePatches1).toEqual([{ op: 'replace', path: ['a'], value: 1 }]);
+      expect(patches2).toEqual([{ op: 'replace', path: ['b'], value: 20 }]);
+      expect(inversePatches2).toEqual([{ op: 'replace', path: ['b'], value: 2 }]);
+      finalize();
+    });
+
+    test('terminal finalize after continued finalize only produces patches since last checkpoint', () => {
+      const baseState = { a: 0, b: 0, c: 0 };
+      const [draft, finalize] = create(baseState, { enablePatches: true });
+      draft.a = 1;
+      finalize({ continue: true });
+      draft.b = 2;
+      const [state, patches, inversePatches] = finalize();
+      expect(state).toEqual({ a: 1, b: 2, c: 0 });
+      expect(patches).toEqual([{ op: 'replace', path: ['b'], value: 2 }]);
+      expect(inversePatches).toEqual([{ op: 'replace', path: ['b'], value: 0 }]);
+    });
+  });
+
+  describe('structural sharing', () => {
+    test('unmodified sub-trees share the same reference across consecutive finalizations', () => {
+      const baseState = { a: { val: 1 }, b: { val: 2 } };
+      const [draft, finalize] = create(baseState, { enablePatches: true });
+      draft.a.val = 10;
+      const [state1] = finalize({ continue: true });
+      draft.a.val = 20;
+      const [state2] = finalize({ continue: true });
+      expect(state1.b).toBe(state2.b);
+      expect(state1.a).not.toBe(state2.a);
+      finalize();
+    });
+  });
+
+  describe('works with array drafts', () => {
+    test('array mutations produce correct state across multiple continued finalizations', () => {
+      const baseState = { items: [1, 2, 3] };
+      const [draft, finalize] = create(baseState);
+      draft.items.push(4);
+      const state1 = finalize({ continue: true });
+      expect(state1.items).toEqual([1, 2, 3, 4]);
+      draft.items.push(5);
+      const state2 = finalize();
+      expect(state2.items).toEqual([1, 2, 3, 4, 5]);
+      expect(state1.items).toEqual([1, 2, 3, 4]);
+    });
+  });
+
+  describe('works with Map drafts', () => {
+    test('Map mutations produce correct state across multiple continued finalizations', () => {
+      const baseState = {
+        m: new Map([
+          ['a', 1],
+          ['b', 2],
+        ]),
+      };
+      const [draft, finalize] = create(baseState);
+      draft.m.set('a', 10);
+      const state1 = finalize({ continue: true });
+      expect(state1.m.get('a')).toBe(10);
+      expect(state1.m.get('b')).toBe(2);
+      draft.m.set('b', 20);
+      const state2 = finalize();
+      expect(state2.m.get('a')).toBe(10);
+      expect(state2.m.get('b')).toBe(20);
+    });
+  });
+
+  describe('works with Set drafts', () => {
+    test('Set mutations produce correct state across multiple continued finalizations', () => {
+      const baseState = { s: new Set([1, 2, 3]) };
+      const [draft, finalize] = create(baseState);
+      draft.s.delete(1);
+      const state1 = finalize({ continue: true });
+      expect(state1.s.has(1)).toBe(false);
+      expect(state1.s.has(2)).toBe(true);
+      draft.s.add(4);
+      const state2 = finalize();
+      expect(state2.s.has(1)).toBe(false);
+      expect(state2.s.has(4)).toBe(true);
+    });
+  });
+
+  describe('works with nested drafts', () => {
+    test('deeply nested mutations work correctly after continued finalize', () => {
+      const baseState = { outer: { inner: { val: 0 } }, other: { x: 9 } };
+      const [draft, finalize] = create(baseState, { enablePatches: true });
+      draft.outer.inner.val = 1;
+      const [state1, patches1] = finalize({ continue: true });
+      expect(state1.outer.inner.val).toBe(1);
+      expect(patches1).toEqual([
+        { op: 'replace', path: ['outer', 'inner', 'val'], value: 1 },
+      ]);
+      draft.outer.inner.val = 2;
+      const [state2, patches2] = finalize();
+      expect(state2.outer.inner.val).toBe(2);
+      expect(patches2).toEqual([
+        { op: 'replace', path: ['outer', 'inner', 'val'], value: 2 },
+      ]);
+      expect(state1.other).toBe(state2.other);
+    });
+  });
+
+  describe('enableAutoFreeze interaction', () => {
+    test('finalized state is frozen but draft remains mutable when enableAutoFreeze is true', () => {
+      const baseState = { a: 1, b: 2 };
+      const [draft, finalize] = create(baseState, { enableAutoFreeze: true });
+      draft.a = 2;
+      const state = finalize({ continue: true });
+      expect(Object.isFrozen(state)).toBe(true);
+      expect(() => {
+        draft.b = 3;
+      }).not.toThrow();
+    });
+
+    test('terminal state after continued finalize with enableAutoFreeze is correct and frozen', () => {
+      const baseState = { a: 1, b: 2 };
+      const [draft, finalize] = create(baseState, { enableAutoFreeze: true });
+      draft.a = 2;
+      const state1 = finalize({ continue: true });
+      expect(Object.isFrozen(state1)).toBe(true);
+      draft.b = 3;
+      const state2 = finalize();
+      expect(state2).toEqual({ a: 2, b: 3 });
+      expect(Object.isFrozen(state2)).toBe(true);
+    });
+  });
+
+  describe('multiple sequential continued finalizations', () => {
+    test('three rounds of continued finalization produce correct incremental states and patches', () => {
+      const baseState = { a: 0, b: 0, c: 0 };
+      const [draft, finalize] = create(baseState, { enablePatches: true });
+
+      draft.a = 1;
+      const [s1, p1, ip1] = finalize({ continue: true });
+      expect(s1).toEqual({ a: 1, b: 0, c: 0 });
+      expect(p1).toEqual([{ op: 'replace', path: ['a'], value: 1 }]);
+      expect(ip1).toEqual([{ op: 'replace', path: ['a'], value: 0 }]);
+
+      draft.b = 2;
+      const [s2, p2, ip2] = finalize({ continue: true });
+      expect(s2).toEqual({ a: 1, b: 2, c: 0 });
+      expect(p2).toEqual([{ op: 'replace', path: ['b'], value: 2 }]);
+      expect(ip2).toEqual([{ op: 'replace', path: ['b'], value: 0 }]);
+
+      draft.c = 3;
+      const [s3, p3, ip3] = finalize();
+      expect(s3).toEqual({ a: 1, b: 2, c: 3 });
+      expect(p3).toEqual([{ op: 'replace', path: ['c'], value: 3 }]);
+      expect(ip3).toEqual([{ op: 'replace', path: ['c'], value: 0 }]);
+    });
+  });
+
+  describe('apply round-trip correctness', () => {
+    test('apply with inverse patches restores the preceding checkpoint state', () => {
+      const baseState = { a: 1, b: 2 };
+      const [draft, finalize] = create(baseState, { enablePatches: true });
+      draft.a = 10;
+      const [state1, , inversePatches1] = finalize({ continue: true });
+      draft.b = 20;
+      const [state2, , inversePatches2] = finalize({ continue: true });
+      finalize();
+
+      const restored1 = apply(state2, inversePatches2);
+      expect(restored1).toEqual(state1);
+      const restored0 = apply(state1, inversePatches1);
+      expect(restored0).toEqual(baseState);
+    });
+
+    test('apply with forward patches produces the next checkpoint state', () => {
+      const baseState = { a: 1, b: 2 };
+      const [draft, finalize] = create(baseState, { enablePatches: true });
+      draft.a = 10;
+      const [state1, patches1] = finalize({ continue: true });
+      draft.b = 20;
+      const [state2, patches2] = finalize();
+
+      const derived1 = apply(baseState, patches1);
+      expect(derived1).toEqual(state1);
+      const derived2 = apply(state1, patches2);
+      expect(derived2).toEqual(state2);
+    });
+  });
+
+  describe('no-op behavior', () => {
+    test('no changes since creation returns original reference and empty patches', () => {
+      const baseState = { a: 1 };
+      const [draft, finalize] = create(baseState, { enablePatches: true });
+      const [state, patches, inversePatches] = finalize({ continue: true });
+      expect(state).toBe(baseState);
+      expect(patches).toEqual([]);
+      expect(inversePatches).toEqual([]);
+      expect(() => {
+        draft.a = 2;
+      }).not.toThrow();
+    });
+
+    test('no changes since last checkpoint returns same reference and empty patches', () => {
+      const baseState = { a: 1 };
+      const [draft, finalize] = create(baseState, { enablePatches: true });
+      draft.a = 10;
+      const [state1] = finalize({ continue: true });
+      const [state2, patches2, inversePatches2] = finalize({ continue: true });
+      expect(state2).toBe(state1);
+      expect(patches2).toEqual([]);
+      expect(inversePatches2).toEqual([]);
+      finalize();
+    });
+  });
+
+  describe('continue true versus terminal finalize', () => {
+    test('continue true keeps draft alive while terminal finalize revokes it', () => {
+      const baseState = { a: 1, b: 2 };
+      const [draft, finalize] = create(baseState);
+      draft.a = 10;
+      finalize({ continue: true });
+      expect(() => {
+        draft.b = 20;
+      }).not.toThrow();
+      finalize();
+      expect(() => {
+        draft.b = 99;
+      }).toThrow();
+    });
+
+    test('finalize with continue false behaves identically to finalize with no argument', () => {
+      const base1 = { a: 1, b: 2 };
+      const [draft1, finalize1] = create(base1, { enablePatches: true });
+      draft1.a = 10;
+      finalize1({ continue: true });
+      draft1.b = 20;
+      const [state1, patches1, inverse1] = finalize1({ continue: false });
+
+      const base2 = { a: 1, b: 2 };
+      const [draft2, finalize2] = create(base2, { enablePatches: true });
+      draft2.a = 10;
+      finalize2({ continue: true });
+      draft2.b = 20;
+      const [state2, patches2, inverse2] = finalize2();
+
+      expect(state1).toEqual(state2);
+      expect(patches1).toEqual(patches2);
+      expect(inverse1).toEqual(inverse2);
+      expect(() => { draft1.a = 99; }).toThrow();
+      expect(() => { draft2.a = 99; }).toThrow();
+    });
+  });
+
+  describe('mixed nested draft types across continuations', () => {
+    test('object containing array, Map, and Set all work correctly across continuations', () => {
+      const baseState = {
+        obj: { val: 0 },
+        arr: [1, 2],
+        map: new Map<string, number>([['x', 10]]),
+        set: new Set([100, 200]),
+      };
+      const [draft, finalize] = create(baseState, { enablePatches: true });
+
+      draft.obj.val = 1;
+      draft.arr.push(3);
+      const [state1] = finalize({ continue: true });
+      expect(state1.obj.val).toBe(1);
+      expect(state1.arr).toEqual([1, 2, 3]);
+      expect(state1.map.get('x')).toBe(10);
+      expect(state1.set.has(100)).toBe(true);
+
+      draft.map.set('x', 20);
+      draft.set.delete(100);
+      const [state2, patches2] = finalize({ continue: true });
+      expect(state2.obj.val).toBe(1);
+      expect(state2.arr).toEqual([1, 2, 3]);
+      expect(state2.map.get('x')).toBe(20);
+      expect(state2.set.has(100)).toBe(false);
+      expect(patches2.length).toBeGreaterThan(0);
+
+      draft.obj.val = 2;
+      const [state3] = finalize();
+      expect(state3.obj.val).toBe(2);
+      expect(state3.arr).toEqual([1, 2, 3]);
+      expect(state3.map.get('x')).toBe(20);
+      expect(state3.set.has(200)).toBe(true);
+    });
+  });
+
+  describe('enablePatches and enableAutoFreeze combined during continuation', () => {
+    test('patches are correct and states are frozen when both options are enabled', () => {
+      const baseState = { a: 1, b: { c: 2 } };
+      const [draft, finalize] = create(baseState, {
+        enablePatches: true,
+        enableAutoFreeze: true,
+      });
+
+      draft.a = 10;
+      const [state1, patches1, inverse1] = finalize({ continue: true });
+      expect(Object.isFrozen(state1)).toBe(true);
+      expect(Object.isFrozen(state1.b)).toBe(true);
+      expect(patches1).toEqual([{ op: 'replace', path: ['a'], value: 10 }]);
+      expect(inverse1).toEqual([{ op: 'replace', path: ['a'], value: 1 }]);
+
+      draft.b.c = 30;
+      const [state2, patches2, inverse2] = finalize();
+      expect(Object.isFrozen(state2)).toBe(true);
+      expect(Object.isFrozen(state2.b)).toBe(true);
+      expect(patches2).toEqual([
+        { op: 'replace', path: ['b', 'c'], value: 30 },
+      ]);
+      expect(inverse2).toEqual([
+        { op: 'replace', path: ['b', 'c'], value: 2 },
+      ]);
+    });
+  });
+
+  describe('isContinuedDraft', () => {
+    test('returns false for a fresh draft that has never been continued', () => {
+      const [draft, finalize] = create({ a: 1 });
+      expect(isContinuedDraft(draft)).toBe(false);
+      finalize();
+    });
+
+    test('returns true after a single continued finalization', () => {
+      const [draft, finalize] = create({ a: 1 });
+      draft.a = 2;
+      finalize({ continue: true });
+      expect(isContinuedDraft(draft)).toBe(true);
+      finalize();
+    });
+
+    test('returns true after multiple continued finalizations', () => {
+      const [draft, finalize] = create({ a: 1 });
+      draft.a = 2;
+      finalize({ continue: true });
+      draft.a = 3;
+      finalize({ continue: true });
+      expect(isContinuedDraft(draft)).toBe(true);
+      finalize();
+    });
+
+    test('returns false for a non-draft value', () => {
+      expect(isContinuedDraft({ a: 1 })).toBe(false);
+      expect(isContinuedDraft(42)).toBe(false);
+      expect(isContinuedDraft(null)).toBe(false);
+    });
+  });
+
+  describe('getContinuationCount', () => {
+    test('returns 0 for a fresh draft', () => {
+      const [draft, finalize] = create({ x: 1 });
+      expect(getContinuationCount(draft)).toBe(0);
+      finalize();
+    });
+
+    test('returns 1 after one continued finalization', () => {
+      const [draft, finalize] = create({ x: 1 });
+      draft.x = 2;
+      finalize({ continue: true });
+      expect(getContinuationCount(draft)).toBe(1);
+      finalize();
+    });
+
+    test('increments with each successive continuation', () => {
+      const [draft, finalize] = create({ x: 0 });
+      draft.x = 1;
+      finalize({ continue: true });
+      expect(getContinuationCount(draft)).toBe(1);
+      draft.x = 2;
+      finalize({ continue: true });
+      expect(getContinuationCount(draft)).toBe(2);
+      draft.x = 3;
+      finalize({ continue: true });
+      expect(getContinuationCount(draft)).toBe(3);
+      finalize();
+    });
+
+    test('returns 0 for non-draft values', () => {
+      expect(getContinuationCount({ x: 1 })).toBe(0);
+      expect(getContinuationCount('hello')).toBe(0);
+      expect(getContinuationCount(undefined)).toBe(0);
+    });
+  });
+
+  describe('onContinue lifecycle hook', () => {
+    test('fires after each continued finalization with correct event shape', () => {
+      const events: any[] = [];
+      const baseState = { a: 1, b: 2 };
+      const [draft, finalize] = create(baseState, {
+        enablePatches: true,
+        onContinue: (event: any) => { events.push(event); },
+      });
+      draft.a = 10;
+      finalize({ continue: true });
+      expect(events).toHaveLength(1);
+      expect(events[0].state).toEqual({ a: 10, b: 2 });
+      expect(events[0].continuationCount).toBe(1);
+      expect(events[0].patches).toEqual([{ op: 'replace', path: ['a'], value: 10 }]);
+      expect(events[0].inversePatches).toEqual([{ op: 'replace', path: ['a'], value: 1 }]);
+      draft.b = 20;
+      finalize({ continue: true });
+      expect(events).toHaveLength(2);
+      expect(events[1].continuationCount).toBe(2);
+      finalize();
+    });
+
+    test('does not fire on terminal finalization', () => {
+      const events: any[] = [];
+      const baseState = { a: 1 };
+      const [draft, finalize] = create(baseState, {
+        onContinue: (event: any) => { events.push(event); },
+      });
+      draft.a = 2;
+      finalize({ continue: true });
+      expect(events).toHaveLength(1);
+      finalize();
+      expect(events).toHaveLength(1);
+    });
+
+    test('event omits patches and inversePatches when enablePatches is false', () => {
+      const events: any[] = [];
+      const baseState = { a: 1 };
+      const [draft, finalize] = create(baseState, {
+        onContinue: (event: any) => { events.push(event); },
+      });
+      draft.a = 2;
+      finalize({ continue: true });
+      expect(events[0].patches).toBeUndefined();
+      expect(events[0].inversePatches).toBeUndefined();
+      expect(events[0].state).toEqual({ a: 2 });
+      finalize();
+    });
+
+    test('callback error propagates but continuation is committed', () => {
+      const baseState = { a: 1 };
+      const [draft, finalize] = create(baseState, {
+        onContinue: () => { throw new Error('hook error'); },
+      });
+      draft.a = 2;
+      expect(() => finalize({ continue: true })).toThrow('hook error');
+      expect(draft.a).toBe(2);
+      draft.a = 3;
+      const state = finalize();
+      expect(state).toEqual({ a: 3 });
+    });
+
+    test('fires with correct continuationCount across multiple rounds', () => {
+      const counts: number[] = [];
+      const [draft, finalize] = create({ x: 0 }, {
+        onContinue: (event: any) => { counts.push(event.continuationCount); },
+      });
+      draft.x = 1;
+      finalize({ continue: true });
+      draft.x = 2;
+      finalize({ continue: true });
+      draft.x = 3;
+      finalize({ continue: true });
+      expect(counts).toEqual([1, 2, 3]);
+      finalize();
+    });
+  });
+
+  describe('getAccumulatedPatches', () => {
+    test('returns concatenated patches from all continuations', () => {
+      const baseState = { a: 1, b: 2, c: 3 };
+      const [draft, finalize] = create(baseState, { enablePatches: true });
+      draft.a = 10;
+      finalize({ continue: true });
+      draft.b = 20;
+      finalize({ continue: true });
+      const accumulated = getAccumulatedPatches(draft);
+      expect(accumulated).not.toBeNull();
+      expect(accumulated!.patches).toEqual([
+        { op: 'replace', path: ['a'], value: 10 },
+        { op: 'replace', path: ['b'], value: 20 },
+      ]);
+      expect(accumulated!.inversePatches).toEqual([
+        { op: 'replace', path: ['a'], value: 1 },
+        { op: 'replace', path: ['b'], value: 2 },
+      ]);
+      finalize();
+    });
+
+    test('applying accumulated patches to original base produces latest continuation state', () => {
+      const baseState = { a: 1, b: 2 };
+      const [draft, finalize] = create(baseState, { enablePatches: true });
+      draft.a = 10;
+      finalize({ continue: true });
+      draft.b = 20;
+      const [state2] = finalize({ continue: true });
+      const accumulated = getAccumulatedPatches(draft);
+      const derived = apply(baseState, accumulated!.patches);
+      expect(derived).toEqual(state2);
+      finalize();
+    });
+
+    test('applying accumulated inversePatches in reverse to latest state restores original base', () => {
+      const baseState = { a: 1, b: 2 };
+      const [draft, finalize] = create(baseState, { enablePatches: true });
+      draft.a = 10;
+      finalize({ continue: true });
+      draft.b = 20;
+      const [latestState] = finalize({ continue: true });
+      const accumulated = getAccumulatedPatches(draft);
+      const restored = apply(latestState, [...accumulated!.inversePatches].reverse());
+      expect(restored).toEqual(baseState);
+      finalize();
+    });
+
+    test('returns null when enablePatches is not enabled', () => {
+      const [draft, finalize] = create({ a: 1 });
+      draft.a = 2;
+      finalize({ continue: true });
+      expect(getAccumulatedPatches(draft)).toBeNull();
+      finalize();
+    });
+
+    test('returns null for non-draft values', () => {
+      expect(getAccumulatedPatches({ a: 1 })).toBeNull();
+      expect(getAccumulatedPatches(42)).toBeNull();
+      expect(getAccumulatedPatches(null)).toBeNull();
+    });
+
+    test('returns empty arrays before any continuation has occurred', () => {
+      const [draft, finalize] = create({ a: 1 }, { enablePatches: true });
+      const accumulated = getAccumulatedPatches(draft);
+      expect(accumulated).not.toBeNull();
+      expect(accumulated!.patches).toEqual([]);
+      expect(accumulated!.inversePatches).toEqual([]);
+      finalize();
+    });
+
+    test('terminal finalize does not add to accumulated patches', () => {
+      const baseState = { a: 1, b: 2 };
+      const [draft, finalize] = create(baseState, { enablePatches: true });
+      draft.a = 10;
+      finalize({ continue: true });
+      const before = getAccumulatedPatches(draft);
+      draft.b = 20;
+      finalize();
+      // After terminal finalize the draft is revoked, so we check the snapshot taken before
+      expect(before!.patches).toEqual([
+        { op: 'replace', path: ['a'], value: 10 },
+      ]);
+    });
+  });
+
+  describe('maxContinuations limit', () => {
+    test('allows continuations up to the limit', () => {
+      const [draft, finalize] = create({ a: 0 }, { maxContinuations: 2 });
+      draft.a = 1;
+      finalize({ continue: true });
+      draft.a = 2;
+      finalize({ continue: true });
+      const state = finalize();
+      expect(state).toEqual({ a: 2 });
+    });
+
+    test('throws when continuation count would exceed the limit', () => {
+      const [draft, finalize] = create({ a: 0 }, { maxContinuations: 1 });
+      draft.a = 1;
+      finalize({ continue: true });
+      draft.a = 2;
+      expect(() => finalize({ continue: true })).toThrow('Continuation limit exceeded');
+    });
+
+    test('draft remains usable after the throw', () => {
+      const [draft, finalize] = create({ a: 0 }, { maxContinuations: 1 });
+      draft.a = 1;
+      finalize({ continue: true });
+      draft.a = 2;
+      expect(() => finalize({ continue: true })).toThrow('Continuation limit exceeded');
+      expect(draft.a).toBe(2);
+      draft.a = 3;
+      const state = finalize();
+      expect(state).toEqual({ a: 3 });
+    });
+
+    test('maxContinuations zero means no continuations allowed', () => {
+      const [draft, finalize] = create({ a: 0 }, { maxContinuations: 0 });
+      draft.a = 1;
+      expect(() => finalize({ continue: true })).toThrow('Continuation limit exceeded');
+      draft.a = 2;
+      const state = finalize();
+      expect(state).toEqual({ a: 2 });
+    });
+
+    test('terminal finalize is never blocked by maxContinuations', () => {
+      const [draft, finalize] = create({ a: 0 }, { maxContinuations: 1 });
+      draft.a = 1;
+      finalize({ continue: true });
+      draft.a = 2;
+      const state = finalize();
+      expect(state).toEqual({ a: 2 });
+    });
+
+    test('works correctly with enablePatches and onContinue together', () => {
+      const events: any[] = [];
+      const baseState = { a: 0, b: 0 };
+      const [draft, finalize] = create(baseState, {
+        enablePatches: true,
+        maxContinuations: 2,
+        onContinue: (event: any) => { events.push(event); },
+      });
+      draft.a = 1;
+      const [s1, p1] = finalize({ continue: true });
+      expect(s1).toEqual({ a: 1, b: 0 });
+      expect(events).toHaveLength(1);
+
+      draft.b = 2;
+      const [s2, p2] = finalize({ continue: true });
+      expect(s2).toEqual({ a: 1, b: 2 });
+      expect(events).toHaveLength(2);
+
+      draft.a = 99;
+      expect(() => finalize({ continue: true })).toThrow('Continuation limit exceeded');
+      expect(events).toHaveLength(2);
+
+      const accumulated = getAccumulatedPatches(draft);
+      expect(accumulated!.patches).toEqual([
+        { op: 'replace', path: ['a'], value: 1 },
+        { op: 'replace', path: ['b'], value: 2 },
+      ]);
+
+      draft.a = 10;
+      const [s3] = finalize();
+      expect(s3).toEqual({ a: 10, b: 2 });
+    });
+  });
+});

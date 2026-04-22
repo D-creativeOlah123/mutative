@@ -28,11 +28,26 @@ export type PatchesOptions =
       arrayLengthAssignment?: boolean;
     };
 
+export interface FinalizeOptions {
+  continue?: boolean;
+}
+
+export interface ContinuationEvent {
+  state: any;
+  continuationCount: number;
+  patches?: Patches;
+  inversePatches?: Patches;
+}
+
 export interface Finalities {
   draft: ((patches?: Patches, inversePatches?: Patches) => void)[];
   revoke: (() => void)[];
   handledSet: WeakSet<any>;
   draftsCache: WeakSet<object>;
+  nodes: ProxyDraft[];
+  continuationCount: number;
+  accumulatedPatches: Patches | null;
+  accumulatedInversePatches: Patches | null;
 }
 
 export interface ProxyDraft<T = any> {
@@ -128,6 +143,8 @@ export interface Options<O extends PatchesOptions, F extends boolean> {
    * And it can also return a shallow copy function(AutoFreeze and Patches should both be disabled).
    */
   mark?: Mark<O, F>;
+  onContinue?: (event: ContinuationEvent) => void;
+  maxContinuations?: number;
 }
 
 export interface ExternalOptions<O extends PatchesOptions, F extends boolean> {
@@ -148,6 +165,8 @@ export interface ExternalOptions<O extends PatchesOptions, F extends boolean> {
    * And it can also return a shallow copy function(AutoFreeze and Patches should both be disabled).
    */
   mark?: Mark<O, F>[] | Mark<O, F>;
+  onContinue?: (event: ContinuationEvent) => void;
+  maxContinuations?: number;
 }
 
 // Exclude `symbol`

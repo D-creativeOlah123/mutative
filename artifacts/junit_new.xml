@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="jest tests" tests="49" failures="0" errors="0" time="12.786">
+  <testsuite name="resumable finalize" errors="0" failures="0" skipped="0" timestamp="2026-04-22T12:19:44" time="12.276" tests="49">
+    <testcase classname="resumable finalize return shape without enablePatches finalize with continue true returns finalized state and draft remains usable" name="resumable finalize return shape without enablePatches finalize with continue true returns finalized state and draft remains usable" time="0.091">
+    </testcase>
+    <testcase classname="resumable finalize return shape with enablePatches finalize with continue true returns state patches inversePatches tuple" name="resumable finalize return shape with enablePatches finalize with continue true returns state patches inversePatches tuple" time="0.005">
+    </testcase>
+    <testcase classname="resumable finalize draft usability after continued finalize property writes on draft work after continued finalize" name="resumable finalize draft usability after continued finalize property writes on draft work after continued finalize" time="0.012">
+    </testcase>
+    <testcase classname="resumable finalize draft usability after continued finalize property reads on draft return correct values after continued finalize" name="resumable finalize draft usability after continued finalize property reads on draft return correct values after continued finalize" time="0.03">
+    </testcase>
+    <testcase classname="resumable finalize draft usability after continued finalize property deletes on draft work after continued finalize" name="resumable finalize draft usability after continued finalize property deletes on draft work after continued finalize" time="0.007">
+    </testcase>
+    <testcase classname="resumable finalize incremental patch generation patches after continued finalize are relative to the new baseline not the original base state" name="resumable finalize incremental patch generation patches after continued finalize are relative to the new baseline not the original base state" time="0.011">
+    </testcase>
+    <testcase classname="resumable finalize incremental patch generation terminal finalize after continued finalize only produces patches since last checkpoint" name="resumable finalize incremental patch generation terminal finalize after continued finalize only produces patches since last checkpoint" time="0.009">
+    </testcase>
+    <testcase classname="resumable finalize structural sharing unmodified sub-trees share the same reference across consecutive finalizations" name="resumable finalize structural sharing unmodified sub-trees share the same reference across consecutive finalizations" time="0.004">
+    </testcase>
+    <testcase classname="resumable finalize works with array drafts array mutations produce correct state across multiple continued finalizations" name="resumable finalize works with array drafts array mutations produce correct state across multiple continued finalizations" time="0.016">
+    </testcase>
+    <testcase classname="resumable finalize works with Map drafts Map mutations produce correct state across multiple continued finalizations" name="resumable finalize works with Map drafts Map mutations produce correct state across multiple continued finalizations" time="0.009">
+    </testcase>
+    <testcase classname="resumable finalize works with Set drafts Set mutations produce correct state across multiple continued finalizations" name="resumable finalize works with Set drafts Set mutations produce correct state across multiple continued finalizations" time="0.003">
+    </testcase>
+    <testcase classname="resumable finalize works with nested drafts deeply nested mutations work correctly after continued finalize" name="resumable finalize works with nested drafts deeply nested mutations work correctly after continued finalize" time="0.016">
+    </testcase>
+    <testcase classname="resumable finalize enableAutoFreeze interaction finalized state is frozen but draft remains mutable when enableAutoFreeze is true" name="resumable finalize enableAutoFreeze interaction finalized state is frozen but draft remains mutable when enableAutoFreeze is true" time="0.002">
+    </testcase>
+    <testcase classname="resumable finalize enableAutoFreeze interaction terminal state after continued finalize with enableAutoFreeze is correct and frozen" name="resumable finalize enableAutoFreeze interaction terminal state after continued finalize with enableAutoFreeze is correct and frozen" time="0.002">
+    </testcase>
+    <testcase classname="resumable finalize multiple sequential continued finalizations three rounds of continued finalization produce correct incremental states and patches" name="resumable finalize multiple sequential continued finalizations three rounds of continued finalization produce correct incremental states and patches" time="0.007">
+    </testcase>
+    <testcase classname="resumable finalize apply round-trip correctness apply with inverse patches restores the preceding checkpoint state" name="resumable finalize apply round-trip correctness apply with inverse patches restores the preceding checkpoint state" time="0.004">
+    </testcase>
+    <testcase classname="resumable finalize apply round-trip correctness apply with forward patches produces the next checkpoint state" name="resumable finalize apply round-trip correctness apply with forward patches produces the next checkpoint state" time="0.002">
+    </testcase>
+    <testcase classname="resumable finalize no-op behavior no changes since creation returns original reference and empty patches" name="resumable finalize no-op behavior no changes since creation returns original reference and empty patches" time="0.005">
+    </testcase>
+    <testcase classname="resumable finalize no-op behavior no changes since last checkpoint returns same reference and empty patches" name="resumable finalize no-op behavior no changes since last checkpoint returns same reference and empty patches" time="0.002">
+    </testcase>
+    <testcase classname="resumable finalize continue true versus terminal finalize continue true keeps draft alive while terminal finalize revokes it" name="resumable finalize continue true versus terminal finalize continue true keeps draft alive while terminal finalize revokes it" time="0.141">
+    </testcase>
+    <testcase classname="resumable finalize continue true versus terminal finalize finalize with continue false behaves identically to finalize with no argument" name="resumable finalize continue true versus terminal finalize finalize with continue false behaves identically to finalize with no argument" time="0.017">
+    </testcase>
+    <testcase classname="resumable finalize mixed nested draft types across continuations object containing array, Map, and Set all work correctly across continuations" name="resumable finalize mixed nested draft types across continuations object containing array, Map, and Set all work correctly across continuations" time="0.012">
+    </testcase>
+    <testcase classname="resumable finalize enablePatches and enableAutoFreeze combined during continuation patches are correct and states are frozen when both options are enabled" name="resumable finalize enablePatches and enableAutoFreeze combined during continuation patches are correct and states are frozen when both options are enabled" time="0.004">
+    </testcase>
+    <testcase classname="resumable finalize isContinuedDraft returns false for a fresh draft that has never been continued" name="resumable finalize isContinuedDraft returns false for a fresh draft that has never been continued" time="0.001">
+    </testcase>
+    <testcase classname="resumable finalize isContinuedDraft returns true after a single continued finalization" name="resumable finalize isContinuedDraft returns true after a single continued finalization" time="0.001">
+    </testcase>
+    <testcase classname="resumable finalize isContinuedDraft returns true after multiple continued finalizations" name="resumable finalize isContinuedDraft returns true after multiple continued finalizations" time="0.003">
+    </testcase>
+    <testcase classname="resumable finalize isContinuedDraft returns false for a non-draft value" name="resumable finalize isContinuedDraft returns false for a non-draft value" time="0.003">
+    </testcase>
+    <testcase classname="resumable finalize getContinuationCount returns 0 for a fresh draft" name="resumable finalize getContinuationCount returns 0 for a fresh draft" time="0.002">
+    </testcase>
+    <testcase classname="resumable finalize getContinuationCount returns 1 after one continued finalization" name="resumable finalize getContinuationCount returns 1 after one continued finalization" time="0.001">
+    </testcase>
+    <testcase classname="resumable finalize getContinuationCount increments with each successive continuation" name="resumable finalize getContinuationCount increments with each successive continuation" time="0.009">
+    </testcase>
+    <testcase classname="resumable finalize getContinuationCount returns 0 for non-draft values" name="resumable finalize getContinuationCount returns 0 for non-draft values" time="0.002">
+    </testcase>
+    <testcase classname="resumable finalize onContinue lifecycle hook fires after each continued finalization with correct event shape" name="resumable finalize onContinue lifecycle hook fires after each continued finalization with correct event shape" time="0.005">
+    </testcase>
+    <testcase classname="resumable finalize onContinue lifecycle hook does not fire on terminal finalization" name="resumable finalize onContinue lifecycle hook does not fire on terminal finalization" time="0.002">
+    </testcase>
+    <testcase classname="resumable finalize onContinue lifecycle hook event omits patches and inversePatches when enablePatches is false" name="resumable finalize onContinue lifecycle hook event omits patches and inversePatches when enablePatches is false" time="0.01">
+    </testcase>
+    <testcase classname="resumable finalize onContinue lifecycle hook callback error propagates but continuation is committed" name="resumable finalize onContinue lifecycle hook callback error propagates but continuation is committed" time="0.021">
+    </testcase>
+    <testcase classname="resumable finalize onContinue lifecycle hook fires with correct continuationCount across multiple rounds" name="resumable finalize onContinue lifecycle hook fires with correct continuationCount across multiple rounds" time="0.001">
+    </testcase>
+    <testcase classname="resumable finalize getAccumulatedPatches returns concatenated patches from all continuations" name="resumable finalize getAccumulatedPatches returns concatenated patches from all continuations" time="0.01">
+    </testcase>
+    <testcase classname="resumable finalize getAccumulatedPatches applying accumulated patches to original base produces latest continuation state" name="resumable finalize getAccumulatedPatches applying accumulated patches to original base produces latest continuation state" time="0.002">
+    </testcase>
+    <testcase classname="resumable finalize getAccumulatedPatches applying accumulated inversePatches in reverse to latest state restores original base" name="resumable finalize getAccumulatedPatches applying accumulated inversePatches in reverse to latest state restores original base" time="0.002">
+    </testcase>
+    <testcase classname="resumable finalize getAccumulatedPatches returns null when enablePatches is not enabled" name="resumable finalize getAccumulatedPatches returns null when enablePatches is not enabled" time="0.002">
+    </testcase>
+    <testcase classname="resumable finalize getAccumulatedPatches returns null for non-draft values" name="resumable finalize getAccumulatedPatches returns null for non-draft values" time="0.006">
+    </testcase>
+    <testcase classname="resumable finalize getAccumulatedPatches returns empty arrays before any continuation has occurred" name="resumable finalize getAccumulatedPatches returns empty arrays before any continuation has occurred" time="0.001">
+    </testcase>
+    <testcase classname="resumable finalize getAccumulatedPatches terminal finalize does not add to accumulated patches" name="resumable finalize getAccumulatedPatches terminal finalize does not add to accumulated patches" time="0.001">
+    </testcase>
+    <testcase classname="resumable finalize maxContinuations limit allows continuations up to the limit" name="resumable finalize maxContinuations limit allows continuations up to the limit" time="0.002">
+    </testcase>
+    <testcase classname="resumable finalize maxContinuations limit throws when continuation count would exceed the limit" name="resumable finalize maxContinuations limit throws when continuation count would exceed the limit" time="0.002">
+    </testcase>
+    <testcase classname="resumable finalize maxContinuations limit draft remains usable after the throw" name="resumable finalize maxContinuations limit draft remains usable after the throw" time="0.013">
+    </testcase>
+    <testcase classname="resumable finalize maxContinuations limit maxContinuations zero means no continuations allowed" name="resumable finalize maxContinuations limit maxContinuations zero means no continuations allowed" time="0.005">
+    </testcase>
+    <testcase classname="resumable finalize maxContinuations limit terminal finalize is never blocked by maxContinuations" name="resumable finalize maxContinuations limit terminal finalize is never blocked by maxContinuations" time="0.003">
+    </testcase>
+    <testcase classname="resumable finalize maxContinuations limit works correctly with enablePatches and onContinue together" name="resumable finalize maxContinuations limit works correctly with enablePatches and onContinue together" time="0.007">
+    </testcase>
+  </testsuite>
+</testsuites>

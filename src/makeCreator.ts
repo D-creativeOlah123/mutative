@@ -1,13 +1,14 @@
 import {
   CreateResult,
   Draft,
+  FinalizeOptions,
   Mark,
   Options,
   ExternalOptions,
   PatchesOptions,
   Result,
 } from './interface';
-import { draftify } from './draftify';
+import { draftify, makeFinalizeWithOptions } from './draftify';
 import {
   getProxyDraft,
   isDraft,
@@ -57,7 +58,7 @@ type MakeCreator = <
   <T extends any, O extends PatchesOptions = _O, F extends boolean = _F>(
     base: T,
     options?: ExternalOptions<O, F>
-  ): [Draft<T>, () => Result<T, O, F>];
+  ): [Draft<T>, (opts?: FinalizeOptions) => Result<T, O, F>];
 };
 
 /**
@@ -148,6 +149,8 @@ export const makeCreator: MakeCreator = (arg) => {
       mark,
       strict,
       enablePatches,
+      onContinue: options.onContinue,
+      maxContinuations: options.maxContinuations,
     };
     if (
       !isDraftable(state, _options) &&
@@ -165,7 +168,7 @@ export const makeCreator: MakeCreator = (arg) => {
           `Invalid base state: create() only supports plain objects, arrays, Set, Map or using mark() to mark the state as immutable.`
         );
       }
-      return [draft, finalize];
+      return [draft, makeFinalizeWithOptions(finalize)];
     }
     let result: any;
     try {

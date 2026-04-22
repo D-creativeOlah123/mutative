@@ -1,4 +1,4 @@
-import { DraftType, Mark, ProxyDraft } from '../interface';
+import { DraftType, Mark, Patches, ProxyDraft } from '../interface';
 import { dataTypes, PROXY_DRAFT } from '../constant';
 import { has } from './proto';
 
@@ -21,6 +21,38 @@ export function getProxyDraft<T extends any>(value: T): ProxyDraft | null {
 export function getValue<T extends object>(value: T): T {
   const proxyDraft = getProxyDraft(value);
   return proxyDraft ? (proxyDraft.copy ?? proxyDraft.original) : value;
+}
+
+/**
+ * Check if a draft has been continued at least once
+ */
+export function isContinuedDraft(value: any): boolean {
+  const proxyDraft = getProxyDraft(value);
+  if (!proxyDraft) return false;
+  return proxyDraft.finalities.continuationCount > 0;
+}
+
+/**
+ * Get the number of times a draft has been continued
+ */
+export function getContinuationCount(value: any): number {
+  const proxyDraft = getProxyDraft(value);
+  if (!proxyDraft) return 0;
+  return proxyDraft.finalities.continuationCount;
+}
+
+/**
+ * Get accumulated patches from all continuations
+ */
+export function getAccumulatedPatches(value: any): { patches: Patches; inversePatches: Patches } | null {
+  const proxyDraft = getProxyDraft(value);
+  if (!proxyDraft) return null;
+  const f = proxyDraft.finalities;
+  if (!f.accumulatedPatches || !f.accumulatedInversePatches) return null;
+  return {
+    patches: f.accumulatedPatches,
+    inversePatches: f.accumulatedInversePatches,
+  };
 }
 
 /**

@@ -1,0 +1,2378 @@
+diff --git a/Dockerfile b/Dockerfile
+new file mode 100644
+index 0000000..e57487f
+--- /dev/null
++++ b/Dockerfile
+@@ -0,0 +1,17 @@
++FROM public.ecr.aws/x8v8d7g8/mars-base:latest
++
++WORKDIR /app
++
++ENV NODE_ENV=development
++ENV COREPACK_HOME=/opt/.corepack
++ENV YARN_CACHE_FOLDER=/opt/.yarn-cache
++ENV npm_config_cache=/opt/.npm
++ENV HOME=/tmp
++
++RUN mkdir -p /opt/.corepack /opt/.yarn-cache /opt/.npm && chmod -R a+rwx /opt/.corepack /opt/.yarn-cache /opt/.npm
++
++COPY . .
++
++RUN yarn install && chmod -R a+rX /app && chmod -R a+rwx /tmp
++
++CMD ["/bin/bash"]
+diff --git a/package.json b/package.json
+index ac31ab4..859b862 100644
+--- a/package.json
++++ b/package.json
+@@ -1,164 +1,165 @@
+-{
+-  "name": "mutative",
+-  "version": "1.3.0",
+-  "description": "A JavaScript library for efficient immutable updates",
+-  "main": "dist/index.js",
+-  "module": "dist/mutative.esm.js",
+-  "umd:main": "dist/mutative.umd.production.min.js",
+-  "unpkg": "dist/mutative.umd.production.min.js",
+-  "jsdelivr": "dist/mutative.umd.production.min.js",
+-  "jsnext:main": "dist/mutative.esm.js",
+-  "react-native": "dist/mutative.esm.js",
+-  "source": "src/index.ts",
+-  "types": "dist/index.d.ts",
+-  "exports": {
+-    ".": {
+-      "import": "./dist/mutative.esm.mjs",
+-      "require": "./dist/index.js",
+-      "types": "./dist/index.d.ts"
+-    },
+-    "./*": "./*"
+-  },
+-  "files": [
+-    "dist",
+-    "src"
+-  ],
+-  "scripts": {
+-    "test": "jest",
+-    "type-check": "tsc --noEmit",
+-    "clean": "rimraf dist",
+-    "test:coverage": "jest --coverage && coveralls < coverage/lcov.info",
+-    "benchmark": "yarn build && yarn benchmark:base && yarn benchmark:object && yarn benchmark:array && yarn benchmark:class",
+-    "all-benchmark": "yarn build && NODE_ENV='production' ts-node test/benchmark/index.ts",
+-    "benchmark:reducer": "NODE_ENV='production' ts-node test/performance/benchmark-reducer.ts",
+-    "benchmark:base": "NODE_ENV='production' ts-node test/performance/benchmark.ts",
+-    "benchmark:object": "NODE_ENV='production' ts-node test/performance/benchmark-object.ts",
+-    "benchmark:array": "NODE_ENV='production' ts-node test/performance/benchmark-array.ts",
+-    "benchmark:class": "NODE_ENV='production' ts-node test/performance/benchmark-class.ts",
+-    "performance:read-only": "yarn build && NODE_ENV='production' ts-node test/performance/read-draft/index.ts",
+-    "performance:immer": "cd test/__immer_performance_tests__ && NODE_ENV='production' ts-node add-data.ts && NODE_ENV='production' ts-node todo.ts && NODE_ENV='production' ts-node incremental.ts",
+-    "performance:basic": "cd test/performance && NODE_ENV='production' ts-node index.ts",
+-    "performance:set-map": "cd test/performance && NODE_ENV='production' ts-node set-map.ts",
+-    "performance:big-object": "cd test/performance && NODE_ENV='production' ts-node big-object.ts",
+-    "performance:sample": "cd test/performance && NODE_ENV='production' ts-node sample.ts",
+-    "performance:array-object": "cd test/performance && NODE_ENV='production' ts-node array-object.ts",
+-    "performance": "yarn build && yarn performance:immer && yarn performance:basic && yarn performance:set-map && yarn performance:big-object && yarn performance:sample && yarn performance:array-object",
+-    "build": "yarn clean && rollup --config --bundleConfigAsCjs",
+-    "build:analyze": "yarn clean && ANALYZE=true rollup --config --bundleConfigAsCjs",
+-    "build:doc": "rimraf docs && typedoc --plugin typedoc-plugin-markdown --out docs src/index.ts --readme none",
+-    "commit": "yarn git-cz",
+-    "size": "size-limit",
+-    "analyze": "size-limit --why",
+-    "prettier": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
+-    "publish:docs": "yarn clean && cd website && GIT_USER=unadlib USE_SSH=true yarn run deploy",
+-    "start:docs": "cd website && yarn run start"
+-  },
+-  "size-limit": [
+-    {
+-      "path": "dist/mutative.cjs.production.min.js",
+-      "limit": "5 KB"
+-    },
+-    {
+-      "path": "dist/mutative.esm.js",
+-      "limit": "5 KB"
+-    }
+-  ],
+-  "repository": {
+-    "type": "git",
+-    "url": "git+https://github.com/unadlib/mutative.git"
+-  },
+-  "author": "unadlib",
+-  "keywords": [
+-    "immutable",
+-    "mutable",
+-    "copy-on-write",
+-    "mutative",
+-    "immutability",
+-    "mutation"
+-  ],
+-  "license": "MIT",
+-  "engines": {
+-    "node": ">=14.0"
+-  },
+-  "bugs": {
+-    "url": "https://github.com/unadlib/mutative/issues"
+-  },
+-  "homepage": "https://mutative.js.org/",
+-  "devDependencies": {
+-    "@rollup/plugin-commonjs": "^28.0.6",
+-    "@rollup/plugin-node-resolve": "^16.0.1",
+-    "@rollup/plugin-replace": "^6.0.2",
+-    "@rollup/plugin-terser": "^0.4.4",
+-    "@rollup/plugin-typescript": "^12.1.4",
+-    "@size-limit/esbuild": "^11.1.6",
+-    "@size-limit/esbuild-why": "^11.2.0",
+-    "@size-limit/preset-small-lib": "^11.1.6",
+-    "@size-limit/webpack": "^11.1.6",
+-    "@size-limit/webpack-why": "^11.1.6",
+-    "@types/jest": "^30.0.0",
+-    "@types/node": "^24.0.13",
+-    "@typescript-eslint/eslint-plugin": "^8.15.0",
+-    "@typescript-eslint/parser": "^8.43.0",
+-    "benchmark": "^2.1.4",
+-    "commitizen": "^4.3.1",
+-    "coveralls": "^3.1.1",
+-    "deep-freeze": "^0.0.1",
+-    "eslint": "^9.34.0",
+-    "eslint-config-airbnb": "^19.0.4",
+-    "eslint-config-prettier": "^10.1.8",
+-    "eslint-plugin-import": "^2.30.0",
+-    "eslint-plugin-jsx-a11y": "^6.10.0",
+-    "eslint-plugin-prettier": "^5.2.1",
+-    "eslint-plugin-react": "^7.37.5",
+-    "fast-json-patch": "^3.1.1",
+-    "immer": "^10.1.3",
+-    "immutable": "^5.1.3",
+-    "jest": "^30.1.1",
+-    "jsdoc-tests": "^1.2.1",
+-    "json2csv": "^5.0.7",
+-    "lodash": "^4.17.21",
+-    "lodash.clonedeep": "^4.5.0",
+-    "prettier": "^3.6.2",
+-    "quickchart-js": "^3.1.3",
+-    "redux": "^5.0.1",
+-    "rimraf": "^6.0.1",
+-    "rollup": "^4.49.0",
+-    "seamless-immutable": "^7.1.4",
+-    "size-limit": "^11.1.6",
+-    "ts-jest": "^29.4.1",
+-    "ts-node": "^10.9.2",
+-    "tslib": "^2.8.1",
+-    "typedoc": "^0.28.12",
+-    "typedoc-plugin-markdown": "^4.8.1",
+-    "typescript": "^5.8.3",
+-    "vite-bundle-analyzer": "^1.3.2",
+-    "yargs": "^17.7.2"
+-  },
+-  "config": {
+-    "commitizen": {
+-      "path": "cz-conventional-changelog"
+-    }
+-  },
+-  "jest": {
+-    "preset": "ts-jest",
+-    "coveragePathIgnorePatterns": [
+-      "<rootDir>/test/"
+-    ],
+-    "transform": {
+-      "\\.[jt]sx?$": [
+-        "ts-jest",
+-        {
+-          "tsconfig": {
+-            "noImplicitReturns": false,
+-            "noFallthroughCasesInSwitch": false,
+-            "noUnusedLocals": false,
+-            "noUnusedParameters": false
+-          }
+-        }
+-      ]
+-    },
+-    "globals": {
+-      "__DEV__": true
+-    }
+-  }
+-}
++{
++  "name": "mutative",
++  "version": "1.3.0",
++  "description": "A JavaScript library for efficient immutable updates",
++  "main": "dist/index.js",
++  "module": "dist/mutative.esm.js",
++  "umd:main": "dist/mutative.umd.production.min.js",
++  "unpkg": "dist/mutative.umd.production.min.js",
++  "jsdelivr": "dist/mutative.umd.production.min.js",
++  "jsnext:main": "dist/mutative.esm.js",
++  "react-native": "dist/mutative.esm.js",
++  "source": "src/index.ts",
++  "types": "dist/index.d.ts",
++  "exports": {
++    ".": {
++      "import": "./dist/mutative.esm.mjs",
++      "require": "./dist/index.js",
++      "types": "./dist/index.d.ts"
++    },
++    "./*": "./*"
++  },
++  "files": [
++    "dist",
++    "src"
++  ],
++  "scripts": {
++    "test": "jest",
++    "type-check": "tsc --noEmit",
++    "clean": "rimraf dist",
++    "test:coverage": "jest --coverage && coveralls < coverage/lcov.info",
++    "benchmark": "yarn build && yarn benchmark:base && yarn benchmark:object && yarn benchmark:array && yarn benchmark:class",
++    "all-benchmark": "yarn build && NODE_ENV='production' ts-node test/benchmark/index.ts",
++    "benchmark:reducer": "NODE_ENV='production' ts-node test/performance/benchmark-reducer.ts",
++    "benchmark:base": "NODE_ENV='production' ts-node test/performance/benchmark.ts",
++    "benchmark:object": "NODE_ENV='production' ts-node test/performance/benchmark-object.ts",
++    "benchmark:array": "NODE_ENV='production' ts-node test/performance/benchmark-array.ts",
++    "benchmark:class": "NODE_ENV='production' ts-node test/performance/benchmark-class.ts",
++    "performance:read-only": "yarn build && NODE_ENV='production' ts-node test/performance/read-draft/index.ts",
++    "performance:immer": "cd test/__immer_performance_tests__ && NODE_ENV='production' ts-node add-data.ts && NODE_ENV='production' ts-node todo.ts && NODE_ENV='production' ts-node incremental.ts",
++    "performance:basic": "cd test/performance && NODE_ENV='production' ts-node index.ts",
++    "performance:set-map": "cd test/performance && NODE_ENV='production' ts-node set-map.ts",
++    "performance:big-object": "cd test/performance && NODE_ENV='production' ts-node big-object.ts",
++    "performance:sample": "cd test/performance && NODE_ENV='production' ts-node sample.ts",
++    "performance:array-object": "cd test/performance && NODE_ENV='production' ts-node array-object.ts",
++    "performance": "yarn build && yarn performance:immer && yarn performance:basic && yarn performance:set-map && yarn performance:big-object && yarn performance:sample && yarn performance:array-object",
++    "build": "yarn clean && rollup --config --bundleConfigAsCjs",
++    "build:analyze": "yarn clean && ANALYZE=true rollup --config --bundleConfigAsCjs",
++    "build:doc": "rimraf docs && typedoc --plugin typedoc-plugin-markdown --out docs src/index.ts --readme none",
++    "commit": "yarn git-cz",
++    "size": "size-limit",
++    "analyze": "size-limit --why",
++    "prettier": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
++    "publish:docs": "yarn clean && cd website && GIT_USER=unadlib USE_SSH=true yarn run deploy",
++    "start:docs": "cd website && yarn run start"
++  },
++  "size-limit": [
++    {
++      "path": "dist/mutative.cjs.production.min.js",
++      "limit": "5 KB"
++    },
++    {
++      "path": "dist/mutative.esm.js",
++      "limit": "5 KB"
++    }
++  ],
++  "repository": {
++    "type": "git",
++    "url": "git+https://github.com/unadlib/mutative.git"
++  },
++  "author": "unadlib",
++  "keywords": [
++    "immutable",
++    "mutable",
++    "copy-on-write",
++    "mutative",
++    "immutability",
++    "mutation"
++  ],
++  "license": "MIT",
++  "engines": {
++    "node": ">=14.0"
++  },
++  "bugs": {
++    "url": "https://github.com/unadlib/mutative/issues"
++  },
++  "homepage": "https://mutative.js.org/",
++  "devDependencies": {
++    "@rollup/plugin-commonjs": "^28.0.6",
++    "@rollup/plugin-node-resolve": "^16.0.1",
++    "@rollup/plugin-replace": "^6.0.2",
++    "@rollup/plugin-terser": "^0.4.4",
++    "@rollup/plugin-typescript": "^12.1.4",
++    "@size-limit/esbuild": "^11.1.6",
++    "@size-limit/esbuild-why": "^11.2.0",
++    "@size-limit/preset-small-lib": "^11.1.6",
++    "@size-limit/webpack": "^11.1.6",
++    "@size-limit/webpack-why": "^11.1.6",
++    "@types/jest": "^30.0.0",
++    "@types/node": "^24.0.13",
++    "@typescript-eslint/eslint-plugin": "^8.15.0",
++    "@typescript-eslint/parser": "^8.43.0",
++    "benchmark": "^2.1.4",
++    "commitizen": "^4.3.1",
++    "coveralls": "^3.1.1",
++    "deep-freeze": "^0.0.1",
++    "eslint": "^9.34.0",
++    "eslint-config-airbnb": "^19.0.4",
++    "eslint-config-prettier": "^10.1.8",
++    "eslint-plugin-import": "^2.30.0",
++    "eslint-plugin-jsx-a11y": "^6.10.0",
++    "eslint-plugin-prettier": "^5.2.1",
++    "eslint-plugin-react": "^7.37.5",
++    "fast-json-patch": "^3.1.1",
++    "immer": "^10.1.3",
++    "immutable": "^5.1.3",
++    "jest": "^30.1.1",
++    "jest-junit": "^16.0.0",
++    "jsdoc-tests": "^1.2.1",
++    "json2csv": "^5.0.7",
++    "lodash": "^4.17.21",
++    "lodash.clonedeep": "^4.5.0",
++    "prettier": "^3.6.2",
++    "quickchart-js": "^3.1.3",
++    "redux": "^5.0.1",
++    "rimraf": "^6.0.1",
++    "rollup": "^4.49.0",
++    "seamless-immutable": "^7.1.4",
++    "size-limit": "^11.1.6",
++    "ts-jest": "^29.4.1",
++    "ts-node": "^10.9.2",
++    "tslib": "^2.8.1",
++    "typedoc": "^0.28.12",
++    "typedoc-plugin-markdown": "^4.8.1",
++    "typescript": "^5.8.3",
++    "vite-bundle-analyzer": "^1.3.2",
++    "yargs": "^17.7.2"
++  },
++  "config": {
++    "commitizen": {
++      "path": "cz-conventional-changelog"
++    }
++  },
++  "jest": {
++    "preset": "ts-jest",
++    "coveragePathIgnorePatterns": [
++      "<rootDir>/test/"
++    ],
++    "transform": {
++      "\\.[jt]sx?$": [
++        "ts-jest",
++        {
++          "tsconfig": {
++            "noImplicitReturns": false,
++            "noFallthroughCasesInSwitch": false,
++            "noUnusedLocals": false,
++            "noUnusedParameters": false
++          }
++        }
++      ]
++    },
++    "globals": {
++      "__DEV__": true
++    }
++  }
++}
+diff --git a/src/draft.ts b/src/draft.ts
+index d52d6bf..dd78a07 100644
+--- a/src/draft.ts
++++ b/src/draft.ts
+@@ -1,336 +1,340 @@
+-import {
+-  DraftType,
+-  Finalities,
+-  Patches,
+-  ProxyDraft,
+-  Options,
+-  Operation,
+-} from './interface';
+-import { dataTypes, PROXY_DRAFT } from './constant';
+-import { mapHandler, mapHandlerKeys } from './map';
+-import { setHandler, setHandlerKeys } from './set';
+-import { internal } from './internal';
+-import {
+-  deepFreeze,
+-  ensureShallowCopy,
+-  getDescriptor,
+-  getProxyDraft,
+-  getType,
+-  getValue,
+-  has,
+-  isEqual,
+-  isDraftable,
+-  latest,
+-  markChanged,
+-  peek,
+-  get,
+-  set,
+-  revokeProxy,
+-  finalizeSetValue,
+-  markFinalization,
+-  finalizePatches,
+-  isDraft,
+-} from './utils';
+-import { checkReadable } from './unsafe';
+-import { generatePatches } from './patch';
+-
+-const proxyHandler: ProxyHandler<ProxyDraft> = {
+-  get(target: ProxyDraft, key: string | number | symbol, receiver: any) {
+-    const copy = target.copy?.[key];
+-    // Improve draft reading performance by caching the draft copy.
+-    if (copy && target.finalities.draftsCache.has(copy)) {
+-      return copy;
+-    }
+-    if (key === PROXY_DRAFT) return target;
+-    let markResult: any;
+-    if (target.options.mark) {
+-      // handle `Uncaught TypeError: Method get Map.prototype.size called on incompatible receiver #<Map>`
+-      // or `Uncaught TypeError: Method get Set.prototype.size called on incompatible receiver #<Set>`
+-      const value =
+-        key === 'size' &&
+-        (target.original instanceof Map || target.original instanceof Set)
+-          ? Reflect.get(target.original, key)
+-          : Reflect.get(target.original, key, receiver);
+-      markResult = target.options.mark(value, dataTypes);
+-      if (markResult === dataTypes.mutable) {
+-        if (target.options.strict) {
+-          checkReadable(value, target.options, true);
+-        }
+-        return value;
+-      }
+-    }
+-    const source = latest(target);
+-
+-    if (source instanceof Map && mapHandlerKeys.includes(key as any)) {
+-      if (key === 'size') {
+-        return Object.getOwnPropertyDescriptor(mapHandler, 'size')!.get!.call(
+-          target.proxy
+-        );
+-      }
+-      const handle = mapHandler[key as keyof typeof mapHandler] as Function;
+-      return handle.bind(target.proxy);
+-    }
+-
+-    if (source instanceof Set && setHandlerKeys.includes(key as any)) {
+-      if (key === 'size') {
+-        return Object.getOwnPropertyDescriptor(setHandler, 'size')!.get!.call(
+-          target.proxy
+-        );
+-      }
+-      const handle = setHandler[key as keyof typeof setHandler] as Function;
+-      return handle.bind(target.proxy);
+-    }
+-
+-    if (!has(source, key)) {
+-      const desc = getDescriptor(source, key);
+-      return desc
+-        ? `value` in desc
+-          ? desc.value
+-          : // !case: support for getter
+-            desc.get?.call(target.proxy)
+-        : undefined;
+-    }
+-    const value = source[key];
+-    if (target.options.strict) {
+-      checkReadable(value, target.options);
+-    }
+-    if (target.finalized || !isDraftable(value, target.options)) {
+-      return value;
+-    }
+-    // Ensure that the assigned values are not drafted
+-    if (value === peek(target.original, key)) {
+-      ensureShallowCopy(target);
+-      target.copy![key] = createDraft({
+-        original: target.original[key],
+-        parentDraft: target,
+-        key: target.type === DraftType.Array ? Number(key) : key,
+-        finalities: target.finalities,
+-        options: target.options,
+-      });
+-      // !case: support for custom shallow copy function
+-      if (typeof markResult === 'function') {
+-        const subProxyDraft = getProxyDraft(target.copy![key])!;
+-        ensureShallowCopy(subProxyDraft);
+-        // Trigger a custom shallow copy to update to a new copy
+-        markChanged(subProxyDraft);
+-        return subProxyDraft.copy;
+-      }
+-      return target.copy![key];
+-    }
+-    if (isDraft(value)) {
+-      target.finalities.draftsCache.add(value);
+-    }
+-    return value;
+-  },
+-  set(target: ProxyDraft, key: string | number | symbol, value: any) {
+-    if (target.type === DraftType.Set || target.type === DraftType.Map) {
+-      throw new Error(
+-        `Map/Set draft does not support any property assignment.`
+-      );
+-    }
+-    let _key: number;
+-    if (
+-      target.type === DraftType.Array &&
+-      key !== 'length' &&
+-      !(
+-        Number.isInteger((_key = Number(key))) &&
+-        _key >= 0 &&
+-        (key === 0 || _key === 0 || String(_key) === String(key))
+-      )
+-    ) {
+-      throw new Error(
+-        `Only supports setting array indices and the 'length' property.`
+-      );
+-    }
+-    const desc = getDescriptor(latest(target), key);
+-    if (desc?.set) {
+-      // !case: cover the case of setter
+-      desc.set.call(target.proxy, value);
+-      return true;
+-    }
+-    const current = peek(latest(target), key);
+-    const currentProxyDraft = getProxyDraft(current);
+-    if (currentProxyDraft && isEqual(currentProxyDraft.original, value)) {
+-      // !case: ignore the case of assigning the original draftable value to a draft
+-      target.copy![key] = value;
+-      target.assignedMap = target.assignedMap ?? new Map();
+-      target.assignedMap.set(key, false);
+-      return true;
+-    }
+-    // !case: handle new props with value 'undefined'
+-    if (
+-      isEqual(value, current) &&
+-      (value !== undefined || has(target.original, key))
+-    )
+-      return true;
+-    ensureShallowCopy(target);
+-    markChanged(target);
+-    if (has(target.original, key) && isEqual(value, target.original[key])) {
+-      // !case: handle the case of assigning the original non-draftable value to a draft
+-      target.assignedMap!.delete(key);
+-    } else {
+-      target.assignedMap!.set(key, true);
+-    }
+-    target.copy![key] = value;
+-    markFinalization(target, key, value, generatePatches);
+-    return true;
+-  },
+-  has(target: ProxyDraft, key: string | symbol) {
+-    return key in latest(target);
+-  },
+-  ownKeys(target: ProxyDraft) {
+-    return Reflect.ownKeys(latest(target));
+-  },
+-  getOwnPropertyDescriptor(target: ProxyDraft, key: string | symbol) {
+-    const source = latest(target);
+-    const descriptor = Reflect.getOwnPropertyDescriptor(source, key);
+-    if (!descriptor) return descriptor;
+-    return {
+-      writable: true,
+-      configurable: target.type !== DraftType.Array || key !== 'length',
+-      enumerable: descriptor.enumerable,
+-      value: source[key],
+-    };
+-  },
+-  getPrototypeOf(target: ProxyDraft) {
+-    return Reflect.getPrototypeOf(target.original);
+-  },
+-  setPrototypeOf() {
+-    throw new Error(`Cannot call 'setPrototypeOf()' on drafts`);
+-  },
+-  defineProperty() {
+-    throw new Error(`Cannot call 'defineProperty()' on drafts`);
+-  },
+-  deleteProperty(target: ProxyDraft, key: string | symbol) {
+-    if (target.type === DraftType.Array) {
+-      return proxyHandler.set!.call(this, target, key, undefined, target.proxy);
+-    }
+-    if (peek(target.original, key) !== undefined || key in target.original) {
+-      // !case: delete an existing key
+-      ensureShallowCopy(target);
+-      markChanged(target);
+-      target.assignedMap!.set(key, false);
+-    } else {
+-      target.assignedMap = target.assignedMap ?? new Map();
+-      // The original non-existent key has been deleted
+-      target.assignedMap.delete(key);
+-    }
+-    if (target.copy) delete target.copy[key];
+-    return true;
+-  },
+-};
+-
+-export function createDraft<T extends object>(createDraftOptions: {
+-  original: T;
+-  parentDraft?: ProxyDraft | null;
+-  key?: string | number | symbol;
+-  finalities: Finalities;
+-  options: Options<any, any>;
+-}): T {
+-  const { original, parentDraft, key, finalities, options } =
+-    createDraftOptions;
+-  const type = getType(original);
+-  const proxyDraft: ProxyDraft = {
+-    type,
+-    finalized: false,
+-    parent: parentDraft,
+-    original,
+-    copy: null,
+-    proxy: null,
+-    finalities,
+-    options,
+-    // Mapping of draft Set items to their corresponding draft values.
+-    setMap:
+-      type === DraftType.Set
+-        ? new Map((original as Set<any>).entries())
+-        : undefined,
+-  };
+-  // !case: undefined as a draft map key
+-  if (key || 'key' in createDraftOptions) {
+-    proxyDraft.key = key;
+-  }
+-  const { proxy, revoke } = Proxy.revocable<any>(
+-    type === DraftType.Array ? Object.assign([], proxyDraft) : proxyDraft,
+-    proxyHandler
+-  );
+-  finalities.revoke.push(revoke);
+-  proxyDraft.proxy = proxy;
+-  if (parentDraft) {
+-    const target = parentDraft;
+-    target.finalities.draft.push((patches, inversePatches) => {
+-      const oldProxyDraft = getProxyDraft(proxy)!;
+-      // if target is a Set draft, `setMap` is the real Set copies proxy mapping.
+-      let copy = target.type === DraftType.Set ? target.setMap : target.copy;
+-      const draft = get(copy, key!);
+-      const proxyDraft = getProxyDraft(draft);
+-      if (proxyDraft) {
+-        // assign the updated value to the copy object
+-        let updatedValue = proxyDraft.original;
+-        if (proxyDraft.operated) {
+-          updatedValue = getValue(draft);
+-        }
+-        finalizeSetValue(proxyDraft);
+-        finalizePatches(proxyDraft, generatePatches, patches, inversePatches);
+-        if (__DEV__ && target.options.enableAutoFreeze) {
+-          target.options.updatedValues =
+-            target.options.updatedValues ?? new WeakMap();
+-          target.options.updatedValues.set(updatedValue, proxyDraft.original);
+-        }
+-        // final update value
+-        set(copy, key!, updatedValue);
+-      }
+-      // !case: handle the deleted key
+-      oldProxyDraft.callbacks?.forEach((callback) => {
+-        callback(patches, inversePatches);
+-      });
+-    });
+-  } else {
+-    // !case: handle the root draft
+-    const target = getProxyDraft(proxy)!;
+-    target.finalities.draft.push((patches, inversePatches) => {
+-      finalizeSetValue(target);
+-      finalizePatches(target, generatePatches, patches, inversePatches);
+-    });
+-  }
+-  return proxy;
+-}
+-
+-internal.createDraft = createDraft;
+-
+-export function finalizeDraft<T>(
+-  result: T,
+-  returnedValue: [T] | [],
+-  patches?: Patches,
+-  inversePatches?: Patches,
+-  enableAutoFreeze?: boolean
+-) {
+-  const proxyDraft = getProxyDraft(result);
+-  const original = proxyDraft?.original ?? result;
+-  const hasReturnedValue = !!returnedValue.length;
+-  if (proxyDraft?.operated) {
+-    while (proxyDraft.finalities.draft.length > 0) {
+-      const finalize = proxyDraft.finalities.draft.pop()!;
+-      finalize(patches, inversePatches);
+-    }
+-  }
+-  const state = hasReturnedValue
+-    ? returnedValue[0]
+-    : proxyDraft
+-      ? proxyDraft.operated
+-        ? proxyDraft.copy
+-        : proxyDraft.original
+-      : result;
+-  if (proxyDraft) revokeProxy(proxyDraft);
+-  if (enableAutoFreeze) {
+-    deepFreeze(state, state, proxyDraft?.options.updatedValues);
+-  }
+-  return [
+-    state,
+-    patches && hasReturnedValue
+-      ? [{ op: Operation.Replace, path: [], value: returnedValue[0] }]
+-      : patches,
+-    inversePatches && hasReturnedValue
+-      ? [{ op: Operation.Replace, path: [], value: original }]
+-      : inversePatches,
+-  ] as [T, Patches | undefined, Patches | undefined];
+-}
++import {
++  DraftType,
++  Finalities,
++  Patches,
++  ProxyDraft,
++  Options,
++  Operation,
++} from './interface';
++import { dataTypes, PROXY_DRAFT } from './constant';
++import { mapHandler, mapHandlerKeys } from './map';
++import { setHandler, setHandlerKeys } from './set';
++import { internal } from './internal';
++import {
++  deepFreeze,
++  ensureShallowCopy,
++  getDescriptor,
++  getProxyDraft,
++  getType,
++  getValue,
++  has,
++  isEqual,
++  isDraftable,
++  latest,
++  markChanged,
++  peek,
++  get,
++  set,
++  revokeProxy,
++  finalizeSetValue,
++  markFinalization,
++  finalizePatches,
++  isDraft,
++} from './utils';
++import { checkReadable } from './unsafe';
++import { generatePatches } from './patch';
++
++const proxyHandler: ProxyHandler<ProxyDraft> = {
++  get(target: ProxyDraft, key: string | number | symbol, receiver: any) {
++    const copy = target.copy?.[key];
++    // Improve draft reading performance by caching the draft copy.
++    if (copy && target.finalities.draftsCache.has(copy)) {
++      return copy;
++    }
++    if (key === PROXY_DRAFT) return target;
++    let markResult: any;
++    if (target.options.mark) {
++      // handle `Uncaught TypeError: Method get Map.prototype.size called on incompatible receiver #<Map>`
++      // or `Uncaught TypeError: Method get Set.prototype.size called on incompatible receiver #<Set>`
++      const value =
++        key === 'size' &&
++        (target.original instanceof Map || target.original instanceof Set)
++          ? Reflect.get(target.original, key)
++          : Reflect.get(target.original, key, receiver);
++      markResult = target.options.mark(value, dataTypes);
++      if (markResult === dataTypes.mutable) {
++        if (target.options.strict) {
++          checkReadable(value, target.options, true);
++        }
++        return value;
++      }
++    }
++    const source = latest(target);
++
++    if (source instanceof Map && mapHandlerKeys.includes(key as any)) {
++      if (key === 'size') {
++        return Object.getOwnPropertyDescriptor(mapHandler, 'size')!.get!.call(
++          target.proxy
++        );
++      }
++      const handle = mapHandler[key as keyof typeof mapHandler] as Function;
++      return handle.bind(target.proxy);
++    }
++
++    if (source instanceof Set && setHandlerKeys.includes(key as any)) {
++      if (key === 'size') {
++        return Object.getOwnPropertyDescriptor(setHandler, 'size')!.get!.call(
++          target.proxy
++        );
++      }
++      const handle = setHandler[key as keyof typeof setHandler] as Function;
++      return handle.bind(target.proxy);
++    }
++
++    if (!has(source, key)) {
++      const desc = getDescriptor(source, key);
++      return desc
++        ? `value` in desc
++          ? desc.value
++          : // !case: support for getter
++            desc.get?.call(target.proxy)
++        : undefined;
++    }
++    const value = source[key];
++    if (target.options.strict) {
++      checkReadable(value, target.options);
++    }
++    if (target.finalized || !isDraftable(value, target.options)) {
++      return value;
++    }
++    // Ensure that the assigned values are not drafted
++    if (value === peek(target.original, key)) {
++      ensureShallowCopy(target);
++      target.copy![key] = createDraft({
++        original: target.original[key],
++        parentDraft: target,
++        key: target.type === DraftType.Array ? Number(key) : key,
++        finalities: target.finalities,
++        options: target.options,
++      });
++      // !case: support for custom shallow copy function
++      if (typeof markResult === 'function') {
++        const subProxyDraft = getProxyDraft(target.copy![key])!;
++        ensureShallowCopy(subProxyDraft);
++        // Trigger a custom shallow copy to update to a new copy
++        markChanged(subProxyDraft);
++        return subProxyDraft.copy;
++      }
++      return target.copy![key];
++    }
++    if (isDraft(value)) {
++      target.finalities.draftsCache.add(value);
++    }
++    return value;
++  },
++  set(target: ProxyDraft, key: string | number | symbol, value: any) {
++    if (target.type === DraftType.Set || target.type === DraftType.Map) {
++      throw new Error(
++        `Map/Set draft does not support any property assignment.`
++      );
++    }
++    let _key: number;
++    if (
++      target.type === DraftType.Array &&
++      key !== 'length' &&
++      !(
++        Number.isInteger((_key = Number(key))) &&
++        _key >= 0 &&
++        (key === 0 || _key === 0 || String(_key) === String(key))
++      )
++    ) {
++      throw new Error(
++        `Only supports setting array indices and the 'length' property.`
++      );
++    }
++    const desc = getDescriptor(latest(target), key);
++    if (desc?.set) {
++      // !case: cover the case of setter
++      desc.set.call(target.proxy, value);
++      return true;
++    }
++    const current = peek(latest(target), key);
++    const currentProxyDraft = getProxyDraft(current);
++    if (currentProxyDraft && isEqual(currentProxyDraft.original, value)) {
++      // !case: ignore the case of assigning the original draftable value to a draft
++      target.copy![key] = value;
++      target.assignedMap = target.assignedMap ?? new Map();
++      target.assignedMap.set(key, false);
++      return true;
++    }
++    // !case: handle new props with value 'undefined'
++    if (
++      isEqual(value, current) &&
++      (value !== undefined || has(target.original, key))
++    )
++      return true;
++    ensureShallowCopy(target);
++    markChanged(target);
++    if (has(target.original, key) && isEqual(value, target.original[key])) {
++      // !case: handle the case of assigning the original non-draftable value to a draft
++      target.assignedMap!.delete(key);
++    } else {
++      target.assignedMap!.set(key, true);
++    }
++    target.copy![key] = value;
++    markFinalization(target, key, value, generatePatches);
++    return true;
++  },
++  has(target: ProxyDraft, key: string | symbol) {
++    return key in latest(target);
++  },
++  ownKeys(target: ProxyDraft) {
++    return Reflect.ownKeys(latest(target));
++  },
++  getOwnPropertyDescriptor(target: ProxyDraft, key: string | symbol) {
++    const source = latest(target);
++    const descriptor = Reflect.getOwnPropertyDescriptor(source, key);
++    if (!descriptor) return descriptor;
++    return {
++      writable: true,
++      configurable: target.type !== DraftType.Array || key !== 'length',
++      enumerable: descriptor.enumerable,
++      value: source[key],
++    };
++  },
++  getPrototypeOf(target: ProxyDraft) {
++    return Reflect.getPrototypeOf(target.original);
++  },
++  setPrototypeOf() {
++    throw new Error(`Cannot call 'setPrototypeOf()' on drafts`);
++  },
++  defineProperty() {
++    throw new Error(`Cannot call 'defineProperty()' on drafts`);
++  },
++  deleteProperty(target: ProxyDraft, key: string | symbol) {
++    if (target.type === DraftType.Array) {
++      return proxyHandler.set!.call(this, target, key, undefined, target.proxy);
++    }
++    if (peek(target.original, key) !== undefined || key in target.original) {
++      // !case: delete an existing key
++      ensureShallowCopy(target);
++      markChanged(target);
++      target.assignedMap!.set(key, false);
++    } else {
++      target.assignedMap = target.assignedMap ?? new Map();
++      // The original non-existent key has been deleted
++      target.assignedMap.delete(key);
++    }
++    if (target.copy) delete target.copy[key];
++    return true;
++  },
++};
++
++export function createDraft<T extends object>(createDraftOptions: {
++  original: T;
++  parentDraft?: ProxyDraft | null;
++  key?: string | number | symbol;
++  finalities: Finalities;
++  options: Options<any, any>;
++}): T {
++  const { original, parentDraft, key, finalities, options } =
++    createDraftOptions;
++  const type = getType(original);
++  const proxyDraft: ProxyDraft = {
++    type,
++    finalized: false,
++    parent: parentDraft,
++    original,
++    copy: null,
++    proxy: null,
++    finalities,
++    options,
++    // Mapping of draft Set items to their corresponding draft values.
++    setMap:
++      type === DraftType.Set
++        ? new Map((original as Set<any>).entries())
++        : undefined,
++  };
++  // !case: undefined as a draft map key
++  if (key || 'key' in createDraftOptions) {
++    proxyDraft.key = key;
++  }
++  const { proxy, revoke } = Proxy.revocable<any>(
++    type === DraftType.Array ? Object.assign([], proxyDraft) : proxyDraft,
++    proxyHandler
++  );
++  finalities.revoke.push(revoke);
++  finalities.nodes.push(proxyDraft);
++  proxyDraft.proxy = proxy;
++  if (parentDraft) {
++    const target = parentDraft;
++    target.finalities.draft.push((patches, inversePatches) => {
++      const oldProxyDraft = getProxyDraft(proxy)!;
++      // if target is a Set draft, `setMap` is the real Set copies proxy mapping.
++      let copy = target.type === DraftType.Set ? target.setMap : target.copy;
++      const draft = get(copy, key!);
++      const proxyDraft = getProxyDraft(draft);
++      if (proxyDraft) {
++        // assign the updated value to the copy object
++        let updatedValue = proxyDraft.original;
++        if (proxyDraft.operated) {
++          updatedValue = getValue(draft);
++        }
++        finalizeSetValue(proxyDraft);
++        finalizePatches(proxyDraft, generatePatches, patches, inversePatches);
++        if (__DEV__ && target.options.enableAutoFreeze) {
++          target.options.updatedValues =
++            target.options.updatedValues ?? new WeakMap();
++          target.options.updatedValues.set(updatedValue, proxyDraft.original);
++        }
++        // final update value
++        set(copy, key!, updatedValue);
++      }
++      // !case: handle the deleted key
++      oldProxyDraft.callbacks?.forEach((callback) => {
++        callback(patches, inversePatches);
++      });
++    });
++  } else {
++    // !case: handle the root draft
++    const target = getProxyDraft(proxy)!;
++    target.finalities.draft.push((patches, inversePatches) => {
++      finalizeSetValue(target);
++      finalizePatches(target, generatePatches, patches, inversePatches);
++    });
++  }
++  return proxy;
++}
++
++internal.createDraft = createDraft;
++
++export function finalizeDraft<T>(
++  result: T,
++  returnedValue: [T] | [],
++  patches?: Patches,
++  inversePatches?: Patches,
++  enableAutoFreeze?: boolean,
++  continueMode?: boolean
++) {
++  const proxyDraft = getProxyDraft(result);
++  const original = proxyDraft?.original ?? result;
++  const hasReturnedValue = !!returnedValue.length;
++  if (proxyDraft?.operated) {
++    while (proxyDraft.finalities.draft.length > 0) {
++      const finalize = proxyDraft.finalities.draft.pop()!;
++      finalize(patches, inversePatches);
++    }
++  }
++  const state = hasReturnedValue
++    ? returnedValue[0]
++    : proxyDraft
++      ? proxyDraft.operated
++        ? proxyDraft.copy
++        : proxyDraft.original
++      : result;
++  if (proxyDraft && !continueMode) {
++    revokeProxy(proxyDraft);
++  }
++  if (enableAutoFreeze) {
++    deepFreeze(state, state, proxyDraft?.options.updatedValues);
++  }
++  return [
++    state,
++    patches && hasReturnedValue
++      ? [{ op: Operation.Replace, path: [], value: returnedValue[0] }]
++      : patches,
++    inversePatches && hasReturnedValue
++      ? [{ op: Operation.Replace, path: [], value: original }]
++      : inversePatches,
++  ] as [T, Patches | undefined, Patches | undefined];
++}
+diff --git a/src/draftify.ts b/src/draftify.ts
+index 832c685..f219726 100644
+--- a/src/draftify.ts
++++ b/src/draftify.ts
+@@ -1,61 +1,108 @@
+-import {
+-  Finalities,
+-  Options,
+-  Patches,
+-  PatchesOptions,
+-  Result,
+-} from './interface';
+-import { createDraft, finalizeDraft } from './draft';
+-import { isDraftable } from './utils';
+-import { dataTypes } from './constant';
+-
+-export function draftify<
+-  T extends object,
+-  O extends PatchesOptions = false,
+-  F extends boolean = false,
+->(
+-  baseState: T,
+-  options: Options<O, F>
+-): [T, (returnedValue: [T] | []) => Result<T, O, F>] {
+-  const finalities: Finalities = {
+-    draft: [],
+-    revoke: [],
+-    handledSet: new WeakSet<any>(),
+-    draftsCache: new WeakSet<object>(),
+-  };
+-  let patches: Patches | undefined;
+-  let inversePatches: Patches | undefined;
+-  if (options.enablePatches) {
+-    patches = [];
+-    inversePatches = [];
+-  }
+-  const isMutable =
+-    options.mark?.(baseState, dataTypes) === dataTypes.mutable ||
+-    !isDraftable(baseState, options);
+-  const draft = isMutable
+-    ? baseState
+-    : createDraft({
+-        original: baseState,
+-        parentDraft: null,
+-        finalities,
+-        options,
+-      });
+-  return [
+-    draft,
+-    (returnedValue: [T] | [] = []) => {
+-      const [finalizedState, finalizedPatches, finalizedInversePatches] =
+-        finalizeDraft(
+-          draft,
+-          returnedValue,
+-          patches,
+-          inversePatches,
+-          options.enableAutoFreeze
+-        );
+-      return (
+-        options.enablePatches
+-          ? [finalizedState, finalizedPatches, finalizedInversePatches]
+-          : finalizedState
+-      ) as Result<T, O, F>;
+-    },
+-  ];
+-}
++import {
++  ContinuationEvent,
++  Finalities,
++  FinalizeOptions,
++  Options,
++  Patches,
++  PatchesOptions,
++  Result,
++} from './interface';
++import { createDraft, finalizeDraft } from './draft';
++import { isDraftable } from './utils';
++import { dataTypes } from './constant';
++import { generatePatches } from './patch';
++import { resumeDraftTree } from './utils/resume';
++
++export function draftify<
++  T extends object,
++  O extends PatchesOptions = false,
++  F extends boolean = false,
++>(
++  baseState: T,
++  options: Options<O, F>
++): [T, (returnedValue: [T] | [], continueMode?: boolean) => Result<T, O, F>] {
++  const finalities: Finalities = {
++    draft: [],
++    revoke: [],
++    handledSet: new WeakSet<any>(),
++    draftsCache: new WeakSet<object>(),
++    nodes: [],
++    continuationCount: 0,
++    accumulatedPatches: options.enablePatches ? [] : null,
++    accumulatedInversePatches: options.enablePatches ? [] : null,
++  };
++  let patches: Patches | undefined;
++  let inversePatches: Patches | undefined;
++  if (options.enablePatches) {
++    patches = [];
++    inversePatches = [];
++  }
++  const isMutable =
++    options.mark?.(baseState, dataTypes) === dataTypes.mutable ||
++    !isDraftable(baseState, options);
++  const draft = isMutable
++    ? baseState
++    : createDraft({
++        original: baseState,
++        parentDraft: null,
++        finalities,
++        options,
++      });
++  return [
++    draft,
++    (returnedValue: [T] | [] = [], continueMode?: boolean) => {
++      if (continueMode && options.maxContinuations !== undefined) {
++        if (finalities.continuationCount >= options.maxContinuations) {
++          throw new Error('Continuation limit exceeded');
++        }
++      }
++      const [finalizedState, finalizedPatches, finalizedInversePatches] =
++        finalizeDraft(
++          draft,
++          returnedValue,
++          patches,
++          inversePatches,
++          options.enableAutoFreeze,
++          continueMode
++        );
++      const result = (
++        options.enablePatches
++          ? [finalizedState, finalizedPatches, finalizedInversePatches]
++          : finalizedState
++      ) as Result<T, O, F>;
++      if (continueMode) {
++        finalities.continuationCount += 1;
++        if (options.enablePatches && finalizedPatches && finalizedInversePatches) {
++          finalities.accumulatedPatches!.push(...finalizedPatches);
++          finalities.accumulatedInversePatches!.push(...finalizedInversePatches);
++        }
++        resumeDraftTree(draft, finalizedState, finalities, generatePatches);
++        if (options.enablePatches) {
++          patches = [];
++          inversePatches = [];
++        }
++        if (options.onContinue) {
++          const event: ContinuationEvent = {
++            state: finalizedState,
++            continuationCount: finalities.continuationCount,
++          };
++          if (options.enablePatches) {
++            event.patches = finalizedPatches;
++            event.inversePatches = finalizedInversePatches;
++          }
++          options.onContinue(event);
++        }
++      }
++      return result;
++    },
++  ];
++}
++
++export function makeFinalizeWithOptions<T, O extends PatchesOptions, F extends boolean>(
++  internalFinalize: (returnedValue: [T] | [], continueMode?: boolean) => Result<T, O, F>
++): (opts?: FinalizeOptions) => Result<T, O, F> {
++  return (opts?: FinalizeOptions): Result<T, O, F> => {
++    return internalFinalize([], opts?.continue === true);
++  };
++}
++
+diff --git a/src/index.ts b/src/index.ts
+index 0223180..fa01f81 100644
+--- a/src/index.ts
++++ b/src/index.ts
+@@ -1,21 +1,26 @@
+-export { makeCreator } from './makeCreator';
+-export { create } from './create';
+-export { apply } from './apply';
+-export { original } from './original';
+-export { current } from './current';
+-export { unsafe } from './unsafe';
+-export { rawReturn } from './rawReturn';
+-export { isDraft } from './utils/draft';
+-export { isDraftable } from './utils/draft';
+-export { markSimpleObject } from './utils/marker';
+-
+-export { castDraft, castImmutable, castMutable } from './utils/cast';
+-export type {
+-  Immutable,
+-  Draft,
+-  Patches,
+-  Patch,
+-  ExternalOptions as Options,
+-  PatchesOptions,
+-  DraftedObject,
+-} from './interface';
++export { makeCreator } from './makeCreator';
++export { create } from './create';
++export { apply } from './apply';
++export { original } from './original';
++export { current } from './current';
++export { unsafe } from './unsafe';
++export { rawReturn } from './rawReturn';
++export { isDraft } from './utils/draft';
++export { isDraftable } from './utils/draft';
++export { isContinuedDraft } from './utils/draft';
++export { getContinuationCount } from './utils/draft';
++export { getAccumulatedPatches } from './utils/draft';
++export { markSimpleObject } from './utils/marker';
++
++export { castDraft, castImmutable, castMutable } from './utils/cast';
++export type {
++  Immutable,
++  Draft,
++  Patches,
++  Patch,
++  ExternalOptions as Options,
++  PatchesOptions,
++  DraftedObject,
++  FinalizeOptions,
++  ContinuationEvent,
++} from './interface';
+diff --git a/src/interface.ts b/src/interface.ts
+index b0eaa7e..d781d19 100644
+--- a/src/interface.ts
++++ b/src/interface.ts
+@@ -1,213 +1,232 @@
+-import { dataTypes } from './constant';
+-
+-export const enum DraftType {
+-  Object,
+-  Array,
+-  Map,
+-  Set,
+-}
+-
+-export const Operation = {
+-  Remove: 'remove',
+-  Replace: 'replace',
+-  Add: 'add',
+-} as const;
+-
+-export type DataType = keyof typeof dataTypes;
+-
+-export type PatchesOptions =
+-  | boolean
+-  | {
+-      /**
+-       * The default value is `true`. If it's `true`, the path will be an array, otherwise it is a string.
+-       */
+-      pathAsArray?: boolean;
+-      /**
+-       * The default value is `true`. If it's `true`, the array length will be included in the patches, otherwise no include array length.
+-       */
+-      arrayLengthAssignment?: boolean;
+-    };
+-
+-export interface Finalities {
+-  draft: ((patches?: Patches, inversePatches?: Patches) => void)[];
+-  revoke: (() => void)[];
+-  handledSet: WeakSet<any>;
+-  draftsCache: WeakSet<object>;
+-}
+-
+-export interface ProxyDraft<T = any> {
+-  type: DraftType;
+-  operated?: boolean;
+-  finalized: boolean;
+-  original: T;
+-  copy: T | null;
+-  proxy: T | null;
+-  finalities: Finalities;
+-  options: Options<any, any> & { updatedValues?: WeakMap<any, any> };
+-  parent?: ProxyDraft | null;
+-  key?: string | number | symbol;
+-  setMap?: Map<any, ProxyDraft>;
+-  assignedMap?: Map<any, boolean>;
+-  callbacks?: ((patches?: Patches, inversePatches?: Patches) => void)[];
+-}
+-
+-export interface IPatch {
+-  op: (typeof Operation)[keyof typeof Operation];
+-  value?: any;
+-}
+-
+-export type Patch<P extends PatchesOptions = any> = P extends {
+-  pathAsArray: false;
+-}
+-  ? IPatch & {
+-      path: string;
+-    }
+-  : P extends true | object
+-    ? IPatch & {
+-        path: (string | number)[];
+-      }
+-    : IPatch & {
+-        path: string | (string | number)[];
+-      };
+-
+-export type Patches<P extends PatchesOptions = any> = Patch<P>[];
+-
+-export type Result<
+-  T extends any,
+-  O extends PatchesOptions,
+-  F extends boolean,
+-> = O extends true | object
+-  ? [F extends true ? Immutable<T> : T, Patches<O>, Patches<O>]
+-  : F extends true
+-    ? Immutable<T>
+-    : T;
+-
+-export type CreateResult<
+-  T extends any,
+-  O extends PatchesOptions,
+-  F extends boolean,
+-  R extends void | Promise<void> | T | Promise<T>,
+-> = R extends Promise<void> | Promise<T>
+-  ? Promise<Result<T, O, F>>
+-  : Result<T, O, F>;
+-
+-type BaseMark = null | undefined | DataType;
+-type MarkWithCopy = BaseMark | (() => any);
+-
+-export type Mark<O extends PatchesOptions, F extends boolean> = (
+-  target: any,
+-  types: typeof dataTypes
+-) => O extends true | object
+-  ? BaseMark
+-  : F extends true
+-    ? BaseMark
+-    : MarkWithCopy;
+-
+-export interface ApplyMutableOptions {
+-  /**
+-   * If it's `true`, the state will be mutated directly.
+-   */
+-  mutable?: boolean;
+-}
+-
+-export interface Options<O extends PatchesOptions, F extends boolean> {
+-  /**
+-   * In strict mode, Forbid accessing non-draftable values and forbid returning a non-draft value.
+-   */
+-  strict?: boolean;
+-  /**
+-   * Enable patch, and return the patches and inversePatches.
+-   */
+-  enablePatches?: O;
+-  /**
+-   * Enable autoFreeze, and return frozen state.
+-   */
+-  enableAutoFreeze?: F;
+-  /**
+-   * Set a mark to determine if the object is mutable or if an instance is an immutable.
+-   * And it can also return a shallow copy function(AutoFreeze and Patches should both be disabled).
+-   */
+-  mark?: Mark<O, F>;
+-}
+-
+-export interface ExternalOptions<O extends PatchesOptions, F extends boolean> {
+-  /**
+-   * In strict mode, Forbid accessing non-draftable values and forbid returning a non-draft value.
+-   */
+-  strict?: boolean;
+-  /**
+-   * Enable patch, and return the patches and inversePatches.
+-   */
+-  enablePatches?: O;
+-  /**
+-   * Enable autoFreeze, and return frozen state.
+-   */
+-  enableAutoFreeze?: F;
+-  /**
+-   * Set a mark to determine if the object is mutable or if an instance is an immutable.
+-   * And it can also return a shallow copy function(AutoFreeze and Patches should both be disabled).
+-   */
+-  mark?: Mark<O, F>[] | Mark<O, F>;
+-}
+-
+-// Exclude `symbol`
+-type Primitive = string | number | bigint | boolean | null | undefined;
+-
+-type ImmutableMap<K, V> = ReadonlyMap<Immutable<K>, Immutable<V>>;
+-type ImmutableSet<T> = ReadonlySet<Immutable<T>>;
+-type ImmutableObject<T> = { readonly [K in keyof T]: Immutable<T[K]> };
+-
+-export type IfAvailable<T, Fallback = void> = true | false extends (
+-  T extends never ? true : false
+-)
+-  ? Fallback
+-  : keyof T extends never
+-    ? Fallback
+-    : T;
+-type WeakReferences =
+-  | IfAvailable<WeakMap<any, any>>
+-  | IfAvailable<WeakSet<any>>;
+-type AtomicObject = Function | Promise<any> | Date | RegExp;
+-
+-export type Immutable<T> = T extends Primitive | AtomicObject
+-  ? T
+-  : T extends IfAvailable<ReadonlyMap<infer K, infer V>>
+-    ? ImmutableMap<K, V>
+-    : T extends IfAvailable<ReadonlySet<infer V>>
+-      ? ImmutableSet<V>
+-      : T extends WeakReferences
+-        ? T
+-        : T extends object
+-          ? ImmutableObject<T>
+-          : T;
+-
+-type DraftedMap<K, V> = Map<K, Draft<V>>;
+-type DraftedSet<T> = Set<Draft<T>>;
+-export type DraftedObject<T> = {
+-  -readonly [K in keyof T]: Draft<T[K]>;
+-};
+-
+-export type Draft<T> = T extends Primitive | AtomicObject
+-  ? T
+-  : T extends IfAvailable<ReadonlyMap<infer K, infer V>>
+-    ? DraftedMap<K, V>
+-    : T extends IfAvailable<ReadonlySet<infer V>>
+-      ? DraftedSet<V>
+-      : T extends WeakReferences
+-        ? T
+-        : T extends object
+-          ? DraftedObject<T>
+-          : T;
+-
+-export type ApplyOptions<F extends boolean> =
+-  | Pick<
+-      Options<boolean, F>,
+-      Exclude<keyof Options<boolean, F>, 'enablePatches'>
+-    >
+-  | ApplyMutableOptions;
+-
+-export type ApplyResult<
+-  T extends object,
+-  F extends boolean = false,
+-  A extends ApplyOptions<F> = ApplyOptions<F>,
+-> = A extends { mutable: true } ? void : T;
++import { dataTypes } from './constant';
++
++export const enum DraftType {
++  Object,
++  Array,
++  Map,
++  Set,
++}
++
++export const Operation = {
++  Remove: 'remove',
++  Replace: 'replace',
++  Add: 'add',
++} as const;
++
++export type DataType = keyof typeof dataTypes;
++
++export type PatchesOptions =
++  | boolean
++  | {
++      /**
++       * The default value is `true`. If it's `true`, the path will be an array, otherwise it is a string.
++       */
++      pathAsArray?: boolean;
++      /**
++       * The default value is `true`. If it's `true`, the array length will be included in the patches, otherwise no include array length.
++       */
++      arrayLengthAssignment?: boolean;
++    };
++
++export interface FinalizeOptions {
++  continue?: boolean;
++}
++
++export interface ContinuationEvent {
++  state: any;
++  continuationCount: number;
++  patches?: Patches;
++  inversePatches?: Patches;
++}
++
++export interface Finalities {
++  draft: ((patches?: Patches, inversePatches?: Patches) => void)[];
++  revoke: (() => void)[];
++  handledSet: WeakSet<any>;
++  draftsCache: WeakSet<object>;
++  nodes: ProxyDraft[];
++  continuationCount: number;
++  accumulatedPatches: Patches | null;
++  accumulatedInversePatches: Patches | null;
++}
++
++export interface ProxyDraft<T = any> {
++  type: DraftType;
++  operated?: boolean;
++  finalized: boolean;
++  original: T;
++  copy: T | null;
++  proxy: T | null;
++  finalities: Finalities;
++  options: Options<any, any> & { updatedValues?: WeakMap<any, any> };
++  parent?: ProxyDraft | null;
++  key?: string | number | symbol;
++  setMap?: Map<any, ProxyDraft>;
++  assignedMap?: Map<any, boolean>;
++  callbacks?: ((patches?: Patches, inversePatches?: Patches) => void)[];
++}
++
++export interface IPatch {
++  op: (typeof Operation)[keyof typeof Operation];
++  value?: any;
++}
++
++export type Patch<P extends PatchesOptions = any> = P extends {
++  pathAsArray: false;
++}
++  ? IPatch & {
++      path: string;
++    }
++  : P extends true | object
++    ? IPatch & {
++        path: (string | number)[];
++      }
++    : IPatch & {
++        path: string | (string | number)[];
++      };
++
++export type Patches<P extends PatchesOptions = any> = Patch<P>[];
++
++export type Result<
++  T extends any,
++  O extends PatchesOptions,
++  F extends boolean,
++> = O extends true | object
++  ? [F extends true ? Immutable<T> : T, Patches<O>, Patches<O>]
++  : F extends true
++    ? Immutable<T>
++    : T;
++
++export type CreateResult<
++  T extends any,
++  O extends PatchesOptions,
++  F extends boolean,
++  R extends void | Promise<void> | T | Promise<T>,
++> = R extends Promise<void> | Promise<T>
++  ? Promise<Result<T, O, F>>
++  : Result<T, O, F>;
++
++type BaseMark = null | undefined | DataType;
++type MarkWithCopy = BaseMark | (() => any);
++
++export type Mark<O extends PatchesOptions, F extends boolean> = (
++  target: any,
++  types: typeof dataTypes
++) => O extends true | object
++  ? BaseMark
++  : F extends true
++    ? BaseMark
++    : MarkWithCopy;
++
++export interface ApplyMutableOptions {
++  /**
++   * If it's `true`, the state will be mutated directly.
++   */
++  mutable?: boolean;
++}
++
++export interface Options<O extends PatchesOptions, F extends boolean> {
++  /**
++   * In strict mode, Forbid accessing non-draftable values and forbid returning a non-draft value.
++   */
++  strict?: boolean;
++  /**
++   * Enable patch, and return the patches and inversePatches.
++   */
++  enablePatches?: O;
++  /**
++   * Enable autoFreeze, and return frozen state.
++   */
++  enableAutoFreeze?: F;
++  /**
++   * Set a mark to determine if the object is mutable or if an instance is an immutable.
++   * And it can also return a shallow copy function(AutoFreeze and Patches should both be disabled).
++   */
++  mark?: Mark<O, F>;
++  onContinue?: (event: ContinuationEvent) => void;
++  maxContinuations?: number;
++}
++
++export interface ExternalOptions<O extends PatchesOptions, F extends boolean> {
++  /**
++   * In strict mode, Forbid accessing non-draftable values and forbid returning a non-draft value.
++   */
++  strict?: boolean;
++  /**
++   * Enable patch, and return the patches and inversePatches.
++   */
++  enablePatches?: O;
++  /**
++   * Enable autoFreeze, and return frozen state.
++   */
++  enableAutoFreeze?: F;
++  /**
++   * Set a mark to determine if the object is mutable or if an instance is an immutable.
++   * And it can also return a shallow copy function(AutoFreeze and Patches should both be disabled).
++   */
++  mark?: Mark<O, F>[] | Mark<O, F>;
++  onContinue?: (event: ContinuationEvent) => void;
++  maxContinuations?: number;
++}
++
++// Exclude `symbol`
++type Primitive = string | number | bigint | boolean | null | undefined;
++
++type ImmutableMap<K, V> = ReadonlyMap<Immutable<K>, Immutable<V>>;
++type ImmutableSet<T> = ReadonlySet<Immutable<T>>;
++type ImmutableObject<T> = { readonly [K in keyof T]: Immutable<T[K]> };
++
++export type IfAvailable<T, Fallback = void> = true | false extends (
++  T extends never ? true : false
++)
++  ? Fallback
++  : keyof T extends never
++    ? Fallback
++    : T;
++type WeakReferences =
++  | IfAvailable<WeakMap<any, any>>
++  | IfAvailable<WeakSet<any>>;
++type AtomicObject = Function | Promise<any> | Date | RegExp;
++
++export type Immutable<T> = T extends Primitive | AtomicObject
++  ? T
++  : T extends IfAvailable<ReadonlyMap<infer K, infer V>>
++    ? ImmutableMap<K, V>
++    : T extends IfAvailable<ReadonlySet<infer V>>
++      ? ImmutableSet<V>
++      : T extends WeakReferences
++        ? T
++        : T extends object
++          ? ImmutableObject<T>
++          : T;
++
++type DraftedMap<K, V> = Map<K, Draft<V>>;
++type DraftedSet<T> = Set<Draft<T>>;
++export type DraftedObject<T> = {
++  -readonly [K in keyof T]: Draft<T[K]>;
++};
++
++export type Draft<T> = T extends Primitive | AtomicObject
++  ? T
++  : T extends IfAvailable<ReadonlyMap<infer K, infer V>>
++    ? DraftedMap<K, V>
++    : T extends IfAvailable<ReadonlySet<infer V>>
++      ? DraftedSet<V>
++      : T extends WeakReferences
++        ? T
++        : T extends object
++          ? DraftedObject<T>
++          : T;
++
++export type ApplyOptions<F extends boolean> =
++  | Pick<
++      Options<boolean, F>,
++      Exclude<keyof Options<boolean, F>, 'enablePatches'>
++    >
++  | ApplyMutableOptions;
++
++export type ApplyResult<
++  T extends object,
++  F extends boolean = false,
++  A extends ApplyOptions<F> = ApplyOptions<F>,
++> = A extends { mutable: true } ? void : T;
+diff --git a/src/makeCreator.ts b/src/makeCreator.ts
+index d9e535c..7cd04f6 100644
+--- a/src/makeCreator.ts
++++ b/src/makeCreator.ts
+@@ -1,228 +1,231 @@
+-import {
+-  CreateResult,
+-  Draft,
+-  Mark,
+-  Options,
+-  ExternalOptions,
+-  PatchesOptions,
+-  Result,
+-} from './interface';
+-import { draftify } from './draftify';
+-import {
+-  getProxyDraft,
+-  isDraft,
+-  isDraftable,
+-  isEqual,
+-  revokeProxy,
+-} from './utils';
+-import { current, handleReturnValue } from './current';
+-import { RAW_RETURN_SYMBOL, dataTypes } from './constant';
+-
+-type MakeCreator = <
+-  _F extends boolean = false,
+-  _O extends PatchesOptions = false,
+->(
+-  options?: ExternalOptions<_O, _F>
+-) => {
+-  <
+-    T extends any,
+-    F extends boolean = _F,
+-    O extends PatchesOptions = _O,
+-    R extends void | Promise<void> | T | Promise<T> = void,
+-  >(
+-    base: T,
+-    mutate: (draft: Draft<T>) => R,
+-    options?: ExternalOptions<O, F>
+-  ): CreateResult<T, O, F, R>;
+-  <
+-    T extends any,
+-    F extends boolean = _F,
+-    O extends PatchesOptions = _O,
+-    R extends void | Promise<void> = void,
+-  >(
+-    base: T,
+-    mutate: (draft: T) => R,
+-    options?: ExternalOptions<O, F>
+-  ): CreateResult<T, O, F, R>;
+-  <
+-    T extends any,
+-    P extends any[] = [],
+-    F extends boolean = _F,
+-    O extends PatchesOptions = _O,
+-    R extends void | Promise<void> = void,
+-  >(
+-    mutate: (draft: Draft<T>, ...args: P) => R,
+-    options?: ExternalOptions<O, F>
+-  ): (base: T, ...args: P) => CreateResult<T, O, F, R>;
+-  <T extends any, O extends PatchesOptions = _O, F extends boolean = _F>(
+-    base: T,
+-    options?: ExternalOptions<O, F>
+-  ): [Draft<T>, () => Result<T, O, F>];
+-};
+-
+-/**
+- * `makeCreator(options)` to make a creator function.
+- *
+- * ## Example
+- *
+- * ```ts
+- * import { makeCreator } from '../index';
+- *
+- * const baseState = { foo: { bar: 'str' }, arr: [] };
+- * const create = makeCreator({ enableAutoFreeze: true });
+- * const state = create(
+- *   baseState,
+- *   (draft) => {
+- *     draft.foo.bar = 'str2';
+- *   },
+- * );
+- *
+- * expect(state).toEqual({ foo: { bar: 'str2' }, arr: [] });
+- * expect(state).not.toBe(baseState);
+- * expect(state.foo).not.toBe(baseState.foo);
+- * expect(state.arr).toBe(baseState.arr);
+- * expect(Object.isFrozen(state)).toBeTruthy();
+- * ```
+- */
+-export const makeCreator: MakeCreator = (arg) => {
+-  if (
+-    __DEV__ &&
+-    arg !== undefined &&
+-    Object.prototype.toString.call(arg) !== '[object Object]'
+-  ) {
+-    throw new Error(
+-      `Invalid options: ${String(arg)}, 'options' should be an object.`
+-    );
+-  }
+-  return function create(arg0: any, arg1: any, arg2?: any): any {
+-    if (typeof arg0 === 'function' && typeof arg1 !== 'function') {
+-      return function (this: any, base: any, ...args: any[]) {
+-        return create(
+-          base,
+-          (draft: any) => arg0.call(this, draft, ...args),
+-          arg1
+-        );
+-      };
+-    }
+-    const base = arg0;
+-    const mutate = arg1 as (...args: any[]) => any;
+-    let options = arg2;
+-    if (typeof arg1 !== 'function') {
+-      options = arg1;
+-    }
+-    if (
+-      __DEV__ &&
+-      options !== undefined &&
+-      Object.prototype.toString.call(options) !== '[object Object]'
+-    ) {
+-      throw new Error(
+-        `Invalid options: ${options}, 'options' should be an object.`
+-      );
+-    }
+-    options = {
+-      ...arg,
+-      ...options,
+-    };
+-    const state = isDraft(base) ? current(base) : base;
+-    const mark = Array.isArray(options.mark)
+-      ? (((value: unknown, types: typeof dataTypes) => {
+-          for (const mark of options.mark as Mark<any, any>[]) {
+-            if (__DEV__ && typeof mark !== 'function') {
+-              throw new Error(
+-                `Invalid mark: ${mark}, 'mark' should be a function.`
+-              );
+-            }
+-            const result = mark(value, types);
+-            if (result) {
+-              return result;
+-            }
+-          }
+-          return;
+-        }) as Mark<any, any>)
+-      : options.mark;
+-    const enablePatches = options.enablePatches ?? false;
+-    const strict = options.strict ?? false;
+-    const enableAutoFreeze = options.enableAutoFreeze ?? false;
+-    const _options: Options<any, any> = {
+-      enableAutoFreeze,
+-      mark,
+-      strict,
+-      enablePatches,
+-    };
+-    if (
+-      !isDraftable(state, _options) &&
+-      typeof state === 'object' &&
+-      state !== null
+-    ) {
+-      throw new Error(
+-        `Invalid base state: create() only supports plain objects, arrays, Set, Map or using mark() to mark the state as immutable.`
+-      );
+-    }
+-    const [draft, finalize] = draftify(state, _options);
+-    if (typeof arg1 !== 'function') {
+-      if (!isDraftable(state, _options)) {
+-        throw new Error(
+-          `Invalid base state: create() only supports plain objects, arrays, Set, Map or using mark() to mark the state as immutable.`
+-        );
+-      }
+-      return [draft, finalize];
+-    }
+-    let result: any;
+-    try {
+-      result = mutate(draft);
+-    } catch (error) {
+-      revokeProxy(getProxyDraft(draft));
+-      throw error;
+-    }
+-    const returnValue = (value: any) => {
+-      const proxyDraft = getProxyDraft(draft)!;
+-      if (!isDraft(value)) {
+-        if (
+-          value !== undefined &&
+-          !isEqual(value, draft) &&
+-          proxyDraft?.operated
+-        ) {
+-          throw new Error(
+-            `Either the value is returned as a new non-draft value, or only the draft is modified without returning any value.`
+-          );
+-        }
+-        const rawReturnValue = value?.[RAW_RETURN_SYMBOL] as [any] | undefined;
+-        if (rawReturnValue) {
+-          const _value = rawReturnValue[0];
+-          if (_options.strict && typeof value === 'object' && value !== null) {
+-            handleReturnValue({
+-              rootDraft: proxyDraft,
+-              value,
+-              useRawReturn: true,
+-            });
+-          }
+-          return finalize([_value]);
+-        }
+-        if (value !== undefined) {
+-          if (typeof value === 'object' && value !== null) {
+-            handleReturnValue({ rootDraft: proxyDraft, value });
+-          }
+-          return finalize([value]);
+-        }
+-      }
+-      if (value === draft || value === undefined) {
+-        return finalize([]);
+-      }
+-      const returnedProxyDraft = getProxyDraft(value)!;
+-      if (_options === returnedProxyDraft.options) {
+-        if (returnedProxyDraft.operated) {
+-          throw new Error(`Cannot return a modified child draft.`);
+-        }
+-        return finalize([current(value)]);
+-      }
+-      return finalize([value]);
+-    };
+-    if (result instanceof Promise) {
+-      return result.then(returnValue, (error) => {
+-        revokeProxy(getProxyDraft(draft)!);
+-        throw error;
+-      });
+-    }
+-    return returnValue(result);
+-  };
+-};
++import {
++  CreateResult,
++  Draft,
++  FinalizeOptions,
++  Mark,
++  Options,
++  ExternalOptions,
++  PatchesOptions,
++  Result,
++} from './interface';
++import { draftify, makeFinalizeWithOptions } from './draftify';
++import {
++  getProxyDraft,
++  isDraft,
++  isDraftable,
++  isEqual,
++  revokeProxy,
++} from './utils';
++import { current, handleReturnValue } from './current';
++import { RAW_RETURN_SYMBOL, dataTypes } from './constant';
++
++type MakeCreator = <
++  _F extends boolean = false,
++  _O extends PatchesOptions = false,
++>(
++  options?: ExternalOptions<_O, _F>
++) => {
++  <
++    T extends any,
++    F extends boolean = _F,
++    O extends PatchesOptions = _O,
++    R extends void | Promise<void> | T | Promise<T> = void,
++  >(
++    base: T,
++    mutate: (draft: Draft<T>) => R,
++    options?: ExternalOptions<O, F>
++  ): CreateResult<T, O, F, R>;
++  <
++    T extends any,
++    F extends boolean = _F,
++    O extends PatchesOptions = _O,
++    R extends void | Promise<void> = void,
++  >(
++    base: T,
++    mutate: (draft: T) => R,
++    options?: ExternalOptions<O, F>
++  ): CreateResult<T, O, F, R>;
++  <
++    T extends any,
++    P extends any[] = [],
++    F extends boolean = _F,
++    O extends PatchesOptions = _O,
++    R extends void | Promise<void> = void,
++  >(
++    mutate: (draft: Draft<T>, ...args: P) => R,
++    options?: ExternalOptions<O, F>
++  ): (base: T, ...args: P) => CreateResult<T, O, F, R>;
++  <T extends any, O extends PatchesOptions = _O, F extends boolean = _F>(
++    base: T,
++    options?: ExternalOptions<O, F>
++  ): [Draft<T>, (opts?: FinalizeOptions) => Result<T, O, F>];
++};
++
++/**
++ * `makeCreator(options)` to make a creator function.
++ *
++ * ## Example
++ *
++ * ```ts
++ * import { makeCreator } from '../index';
++ *
++ * const baseState = { foo: { bar: 'str' }, arr: [] };
++ * const create = makeCreator({ enableAutoFreeze: true });
++ * const state = create(
++ *   baseState,
++ *   (draft) => {
++ *     draft.foo.bar = 'str2';
++ *   },
++ * );
++ *
++ * expect(state).toEqual({ foo: { bar: 'str2' }, arr: [] });
++ * expect(state).not.toBe(baseState);
++ * expect(state.foo).not.toBe(baseState.foo);
++ * expect(state.arr).toBe(baseState.arr);
++ * expect(Object.isFrozen(state)).toBeTruthy();
++ * ```
++ */
++export const makeCreator: MakeCreator = (arg) => {
++  if (
++    __DEV__ &&
++    arg !== undefined &&
++    Object.prototype.toString.call(arg) !== '[object Object]'
++  ) {
++    throw new Error(
++      `Invalid options: ${String(arg)}, 'options' should be an object.`
++    );
++  }
++  return function create(arg0: any, arg1: any, arg2?: any): any {
++    if (typeof arg0 === 'function' && typeof arg1 !== 'function') {
++      return function (this: any, base: any, ...args: any[]) {
++        return create(
++          base,
++          (draft: any) => arg0.call(this, draft, ...args),
++          arg1
++        );
++      };
++    }
++    const base = arg0;
++    const mutate = arg1 as (...args: any[]) => any;
++    let options = arg2;
++    if (typeof arg1 !== 'function') {
++      options = arg1;
++    }
++    if (
++      __DEV__ &&
++      options !== undefined &&
++      Object.prototype.toString.call(options) !== '[object Object]'
++    ) {
++      throw new Error(
++        `Invalid options: ${options}, 'options' should be an object.`
++      );
++    }
++    options = {
++      ...arg,
++      ...options,
++    };
++    const state = isDraft(base) ? current(base) : base;
++    const mark = Array.isArray(options.mark)
++      ? (((value: unknown, types: typeof dataTypes) => {
++          for (const mark of options.mark as Mark<any, any>[]) {
++            if (__DEV__ && typeof mark !== 'function') {
++              throw new Error(
++                `Invalid mark: ${mark}, 'mark' should be a function.`
++              );
++            }
++            const result = mark(value, types);
++            if (result) {
++              return result;
++            }
++          }
++          return;
++        }) as Mark<any, any>)
++      : options.mark;
++    const enablePatches = options.enablePatches ?? false;
++    const strict = options.strict ?? false;
++    const enableAutoFreeze = options.enableAutoFreeze ?? false;
++    const _options: Options<any, any> = {
++      enableAutoFreeze,
++      mark,
++      strict,
++      enablePatches,
++      onContinue: options.onContinue,
++      maxContinuations: options.maxContinuations,
++    };
++    if (
++      !isDraftable(state, _options) &&
++      typeof state === 'object' &&
++      state !== null
++    ) {
++      throw new Error(
++        `Invalid base state: create() only supports plain objects, arrays, Set, Map or using mark() to mark the state as immutable.`
++      );
++    }
++    const [draft, finalize] = draftify(state, _options);
++    if (typeof arg1 !== 'function') {
++      if (!isDraftable(state, _options)) {
++        throw new Error(
++          `Invalid base state: create() only supports plain objects, arrays, Set, Map or using mark() to mark the state as immutable.`
++        );
++      }
++      return [draft, makeFinalizeWithOptions(finalize)];
++    }
++    let result: any;
++    try {
++      result = mutate(draft);
++    } catch (error) {
++      revokeProxy(getProxyDraft(draft));
++      throw error;
++    }
++    const returnValue = (value: any) => {
++      const proxyDraft = getProxyDraft(draft)!;
++      if (!isDraft(value)) {
++        if (
++          value !== undefined &&
++          !isEqual(value, draft) &&
++          proxyDraft?.operated
++        ) {
++          throw new Error(
++            `Either the value is returned as a new non-draft value, or only the draft is modified without returning any value.`
++          );
++        }
++        const rawReturnValue = value?.[RAW_RETURN_SYMBOL] as [any] | undefined;
++        if (rawReturnValue) {
++          const _value = rawReturnValue[0];
++          if (_options.strict && typeof value === 'object' && value !== null) {
++            handleReturnValue({
++              rootDraft: proxyDraft,
++              value,
++              useRawReturn: true,
++            });
++          }
++          return finalize([_value]);
++        }
++        if (value !== undefined) {
++          if (typeof value === 'object' && value !== null) {
++            handleReturnValue({ rootDraft: proxyDraft, value });
++          }
++          return finalize([value]);
++        }
++      }
++      if (value === draft || value === undefined) {
++        return finalize([]);
++      }
++      const returnedProxyDraft = getProxyDraft(value)!;
++      if (_options === returnedProxyDraft.options) {
++        if (returnedProxyDraft.operated) {
++          throw new Error(`Cannot return a modified child draft.`);
++        }
++        return finalize([current(value)]);
++      }
++      return finalize([value]);
++    };
++    if (result instanceof Promise) {
++      return result.then(returnValue, (error) => {
++        revokeProxy(getProxyDraft(draft)!);
++        throw error;
++      });
++    }
++    return returnValue(result);
++  };
++};
+diff --git a/src/utils/draft.ts b/src/utils/draft.ts
+index be1f610..e28afbf 100644
+--- a/src/utils/draft.ts
++++ b/src/utils/draft.ts
+@@ -1,4 +1,4 @@
+-import { DraftType, Mark, ProxyDraft } from '../interface';
++import { DraftType, Mark, Patches, ProxyDraft } from '../interface';
+ import { dataTypes, PROXY_DRAFT } from '../constant';
+ import { has } from './proto';
+
+@@ -23,6 +23,38 @@ export function getValue<T extends object>(value: T): T {
+   return proxyDraft ? (proxyDraft.copy ?? proxyDraft.original) : value;
+ }
+
++/**
++ * Check if a draft has been continued at least once
++ */
++export function isContinuedDraft(value: any): boolean {
++  const proxyDraft = getProxyDraft(value);
++  if (!proxyDraft) return false;
++  return proxyDraft.finalities.continuationCount > 0;
++}
++
++/**
++ * Get the number of times a draft has been continued
++ */
++export function getContinuationCount(value: any): number {
++  const proxyDraft = getProxyDraft(value);
++  if (!proxyDraft) return 0;
++  return proxyDraft.finalities.continuationCount;
++}
++
++/**
++ * Get accumulated patches from all continuations
++ */
++export function getAccumulatedPatches(value: any): { patches: Patches; inversePatches: Patches } | null {
++  const proxyDraft = getProxyDraft(value);
++  if (!proxyDraft) return null;
++  const f = proxyDraft.finalities;
++  if (!f.accumulatedPatches || !f.accumulatedInversePatches) return null;
++  return {
++    patches: f.accumulatedPatches,
++    inversePatches: f.accumulatedInversePatches,
++  };
++}
++
+ /**
+  * Check if a value is draftable
+  */
+diff --git a/src/utils/index.ts b/src/utils/index.ts
+index 057e62c..075eadb 100644
+--- a/src/utils/index.ts
++++ b/src/utils/index.ts
+@@ -1,7 +1,8 @@
+-export * from './copy';
+-export * from './mark';
+-export * from './deepFreeze';
+-export * from './draft';
+-export * from './proto';
+-export * from './forEach';
+-export * from './finalize';
++export * from './copy';
++export * from './mark';
++export * from './deepFreeze';
++export * from './draft';
++export * from './proto';
++export * from './forEach';
++export * from './finalize';
++export * from './resume';
+diff --git a/src/utils/resume.ts b/src/utils/resume.ts
+new file mode 100644
+index 0000000..885ddc5
+--- /dev/null
++++ b/src/utils/resume.ts
+@@ -0,0 +1,125 @@
++import { DraftType, Finalities, Patches, ProxyDraft } from '../interface';
++import { get, getProxyDraft, getValue, set } from './draft';
++import { finalizePatches, finalizeSetValue, GeneratePatches } from './finalize';
++
++function buildKeyPath(node: ProxyDraft): (string | number | symbol)[] | null {
++  const path: (string | number | symbol)[] = [];
++  let cursor: ProxyDraft = node;
++  while (cursor.parent != null) {
++    if (cursor.key === undefined && !Object.prototype.hasOwnProperty.call(cursor, 'key')) {
++      return null;
++    }
++    path.unshift(cursor.key!);
++    cursor = cursor.parent;
++  }
++  return path;
++}
++
++function resolveByKeyPath(root: any, keyPath: (string | number | symbol)[]): any {
++  let current: any = root;
++  for (const key of keyPath) {
++    if (current == null) return undefined;
++    if (current instanceof Map) {
++      current = current.get(key);
++    } else if (current instanceof Set) {
++      const idx = typeof key === 'number' ? key : Number(key);
++      current = Array.from(current)[idx];
++    } else {
++      current = current[key];
++    }
++    if (current === undefined) return undefined;
++  }
++  return current;
++}
++
++function resetNode(node: ProxyDraft, newOriginal: any): void {
++  node.original = newOriginal;
++  node.copy = null;
++  node.operated = false;
++  node.assignedMap = undefined;
++  node.finalized = false;
++  node.callbacks = undefined;
++  if (node.type === DraftType.Set) {
++    node.setMap = new Map((newOriginal as Set<any>).entries());
++  }
++}
++
++function rebuildCallbacks(
++  rootNode: ProxyDraft,
++  childNodes: ProxyDraft[],
++  gpFn: GeneratePatches
++): void {
++  // Root callback
++  rootNode.finalities.draft.push((patches?: Patches, inversePatches?: Patches) => {
++    finalizeSetValue(rootNode);
++    finalizePatches(rootNode, gpFn, patches, inversePatches);
++  });
++  // Child callbacks
++  for (const node of childNodes) {
++    if (node.parent == null || node.key === undefined || node.proxy == null) continue;
++    const parent = node.parent;
++    const key = node.key;
++    const proxy = node.proxy;
++    parent.finalities.draft.push((patches?: Patches, inversePatches?: Patches) => {
++      const oldProxyDraft = getProxyDraft(proxy);
++      const parentCopy = parent.type === DraftType.Set ? parent.setMap : parent.copy;
++      if (parentCopy) {
++        const draft = get(parentCopy, key);
++        const proxyDraft = getProxyDraft(draft);
++        if (proxyDraft) {
++          let updatedValue = proxyDraft.original;
++          if (proxyDraft.operated) {
++            updatedValue = getValue(draft);
++          }
++          finalizeSetValue(proxyDraft);
++          finalizePatches(proxyDraft, gpFn, patches, inversePatches);
++          set(parentCopy, key, updatedValue);
++        }
++      }
++      oldProxyDraft?.callbacks?.forEach((cb) => cb(patches, inversePatches));
++    });
++  }
++}
++
++export function resumeDraftTree<T>(
++  draft: T,
++  finalizedState: T,
++  finalities: Finalities,
++  gpFn: GeneratePatches
++): void {
++  const rootProxyDraft = getProxyDraft(draft);
++  if (!rootProxyDraft) return;
++
++  const allNodes = finalities.nodes.slice();
++
++  // Clear transient state
++  finalities.draft.length = 0;
++  finalities.handledSet = new WeakSet<any>();
++  finalities.draftsCache = new WeakSet<object>();
++  if (rootProxyDraft.options.updatedValues) {
++    rootProxyDraft.options.updatedValues = undefined;
++  }
++
++  // Reset root
++  resetNode(rootProxyDraft, finalizedState);
++
++  // Reset children and rebuild node tracking
++  const resetChildren: ProxyDraft[] = [];
++  finalities.nodes.length = 0;
++  finalities.nodes.push(rootProxyDraft);
++
++  for (const node of allNodes) {
++    if (node === rootProxyDraft) continue;
++    const keyPath = buildKeyPath(node);
++    if (keyPath === null) continue;
++    const newOriginal = keyPath.length === 0
++      ? finalizedState
++      : resolveByKeyPath(finalizedState, keyPath);
++    if (newOriginal === undefined) continue;
++    resetNode(node, newOriginal);
++    resetChildren.push(node);
++    finalities.nodes.push(node);
++  }
++
++  rebuildCallbacks(rootProxyDraft, resetChildren, gpFn);
++}
